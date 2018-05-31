@@ -1,0 +1,1130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'This is the core stack for the Connected Vehicle Solution. It includes
+  core CVS features such as telemetry and data storage.
+
+  As part of its resources it references several nested stacks that give additional
+  functionality to the system.
+
+  Author: Solution Builders.
+
+  RefactoredBy: Pelayo Margareto <pelaym@amazon.com>
+
+  Version: 2.0.1 # TODO Include dynamic versioning?
+
+  '
+Parameters:
+  RolePaths:
+    Default: /connected-vehicle/
+    Description: Path to prepend to the roles for IAM organization
+    Type: String
+  TelemetryApiName:
+    Default: ConnectedVehicleTelemetryApi
+    Description: Name of the telemetry API
+    Type: String
+  TelemetryApiStageName:
+    Default: prod
+    Description: Name of the stage for the telemetry API
+    Type: String
+Resources:
+  AuthStack:
+    Properties:
+      Parameters:
+        RolePaths:
+          Ref: RolePaths
+        TelemetryTripsDataBucket:
+          Fn::GetAtt:
+          - TelemetryStorageStack
+          - Outputs.TelemetryTripsDataBucketName
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Subcomponent
+        Value: auth
+      - Key: Role
+        Value: Auth
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/2610ecc51143e010fa8b33ae17865121.template
+    Type: AWS::CloudFormation::Stack
+  TelemetryApi:
+    DependsOn: AuthStack
+    Properties:
+      DefinitionBody:
+        definitions:
+          Anomaly:
+            properties:
+              Telemetry:
+                description: The Telemetry where the anomaly occured
+                type: string
+              acknowledged:
+                description: Flag indicating if the anomaly is acknowledged
+                type: string
+              anomaly_id:
+                description: The unique identifier of the anomaly
+                type: string
+              anomaly_score:
+                description: The Telemetry where the anomaly occured
+                format: double
+                type: number
+              created_at:
+                description: The creation datetime of the anomaly.
+                type: string
+              description:
+                description: Description of the identified anomaly
+                type: string
+              identified_at:
+                description: The datetime the anomaly was identified.
+                type: string
+              measured_at:
+                description: The measurement datetime of the anomaly.
+                type: string
+              value:
+                description: The Telemetry value when the anomaly occured
+                format: float
+                type: number
+              vin:
+                description: Vehicle Identification Number for the vehicle
+                type: string
+            type: object
+          DiagnosticTroubleCode:
+            properties:
+              acknowledged:
+                description: Flag indicating if the anomaly is acknowledged
+                type: string
+              created_at:
+                description: The creation datetime of the anomaly.
+                type: string
+              description:
+                description: Description of the triggered dtc
+                type: string
+              dtc:
+                description: The diagnostic trouble code identifier triggered
+                type: string
+              id:
+                description: The unique identifier of the dtc
+                type: string
+              steps:
+                items:
+                  $ref: '#/definitions/ResolutionStep'
+                type: array
+              triggered_at:
+                description: The measurement datetime of the anomaly.
+                type: string
+              vin:
+                description: Vehicle Identification Number for the vehicle
+                type: string
+            type: object
+          Empty:
+            title: Empty Schema
+            type: object
+          HealthReport:
+            properties:
+              owner:
+                description: Unique user id for the vehicle owner
+                type: string
+              report_id:
+                description: Unique identification for the health report
+                type: string
+              vin:
+                description: Vehicle Identification Number for the vehicle
+                type: string
+            type: object
+          NewVehicle:
+            $schema: http://json-schema.org/draft-04/schema#
+            properties:
+              nickname:
+                description: Nickname for vehicle by owner
+                type: string
+              vin:
+                description: Vehicle Identification Number for the vehicle
+                type: string
+            required:
+            - vin
+            title: Schema for a new vehicle
+            type: object
+          ResolutionStep:
+            properties:
+              detail:
+                description: The details for the resolution step
+                type: string
+              id:
+                description: The identifier of the resolution step
+                type: string
+            type: object
+          Trip:
+            properties:
+              accelerator_pedal_position_mean:
+                description: Mean accelerator position for trip
+                format: float
+                type: number
+              brake_mean:
+                description: Mean brake position for trip
+                format: float
+                type: number
+              driver_safety_score:
+                description: Driver score for the trip
+                format: float
+                type: number
+              end_time:
+                description: The end time of the trip.
+                type: string
+              engine_speed_mean:
+                description: Mean engine speed for trip
+                format: float
+                type: number
+              fuel_consumed_since_restart:
+                description: Fuel consumed during trip
+                format: float
+                type: number
+              fuel_level:
+                description: Fuel level after trip
+                format: float
+                type: number
+              odometer:
+                description: Odometer reading for trip
+                format: float
+                type: number
+              oil_temp_mean:
+                description: Mean oil temperature for trip
+                format: float
+                type: number
+              owner:
+                description: Unique user id for the vehicle owner
+                type: string
+              start_latitude:
+                description: Latitude at the beginning of the trip
+                format: float
+                type: number
+              start_longitude:
+                description: Longitude at the beginning of the trip
+                format: float
+                type: number
+              start_time:
+                description: The start time of the trip.
+                type: string
+              stop_latitude:
+                description: Latitude at the end of the trip
+                format: float
+                type: number
+              stop_longitude:
+                description: Longitude at the end of the trip
+                format: float
+                type: number
+              torque_at_transmission_mean:
+                description: Mean transmision torque for trip
+                format: float
+                type: number
+              trip_id:
+                description: Unique identification for the trip
+                type: string
+              vehicle_speed_mean:
+                description: Mean vehicle speed for trip
+                format: float
+                type: number
+              vin:
+                description: Vehicle Identification Number for the vehicle
+                type: string
+            type: object
+          Vehicle:
+            properties:
+              nickname:
+                description: Nickname for vehicle by owner
+                type: string
+              odometer:
+                description: Odometer reading for the vehicle
+                format: float
+                type: number
+              owner_id:
+                description: Unique user id for the vehicle owner
+                type: string
+              vin:
+                description: Vehicle Identification Number for the vehicle
+                type: string
+            type: object
+        info:
+          title: Vehicle Services API
+        paths:
+          /vehicles:
+            get:
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+            post:
+              parameters:
+              - description: Vehicle to register.
+                in: body
+                name: NewVehicle
+                required: true
+                schema:
+                  $ref: '#/definitions/NewVehicle'
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+              x-amazon-apigateway-request-validator: body-only
+          /vehicles/{vin}:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter anomalies.
+                in: path
+                name: vin
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Vehicle'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/anomalies:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter anomalies.
+                in: path
+                name: vin
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    items:
+                      $ref: '#/definitions/Anomaly'
+                    type: array
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/anomalies/{anomaly_id}:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter dtc.
+                in: path
+                name: vin
+                required: true
+                type: string
+              - description: Unique identifier of the anomaly record to return.
+                in: path
+                name: anomaly_id
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    $ref: '#/definitions/Anomaly'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/anomalies/{anomaly_id}/acknowledge:
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+            put:
+              parameters:
+              - description: Vehicle Identification Number to filter dtc.
+                in: path
+                name: vin
+                required: true
+                type: string
+              - description: Unique identifier of the anomaly record to return.
+                in: path
+                name: anomaly_id
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    $ref: '#/definitions/Anomaly'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+          /vehicles/{vin}/dtc:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter dtc.
+                in: path
+                name: vin
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    items:
+                      $ref: '#/definitions/DiagnosticTroubleCode'
+                    type: array
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/dtc/{dtc_id}:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter dtc.
+                in: path
+                name: vin
+                required: true
+                type: string
+              - description: Unique identifier of the dtc record to return.
+                in: path
+                name: dtc_id
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    $ref: '#/definitions/DiagnosticTroubleCode'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/dtc/{dtc_id}/acknowledge:
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+            put:
+              parameters:
+              - description: Vehicle Identification Number to filter dtc.
+                in: path
+                name: vin
+                required: true
+                type: string
+              - description: Unique identifier of the dtc record to return.
+                in: path
+                name: dtc_id
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    $ref: '#/definitions/DiagnosticTroubleCode'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+          /vehicles/{vin}/healthreports:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter trips.
+                in: path
+                name: vin
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    items:
+                      $ref: '#/definitions/HealthReport'
+                    type: array
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/healthreports/{report_id}:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter anomalies.
+                in: path
+                name: vin
+                required: true
+                type: string
+              - description: Unique identifier of the health report record to return.
+                in: path
+                name: report_id
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    $ref: '#/definitions/HealthReport'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/trips:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter trips.
+                in: path
+                name: vin
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    items:
+                      $ref: '#/definitions/Trip'
+                    type: array
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+          /vehicles/{vin}/trips/{trip_id}:
+            get:
+              parameters:
+              - description: Vehicle Identification Number to filter anomalies.
+                in: path
+                name: vin
+                required: true
+                type: string
+              - description: Unique identifier of the trip record to return.
+                in: path
+                name: trip_id
+                required: true
+                type: string
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: Successful operation
+                  schema:
+                    $ref: '#/definitions/Trip'
+              security:
+              - vehicle-services-authorizer: []
+              x-amazon-apigateway-integration:
+                contentHandling: CONVERT_TO_TEXT
+                httpMethod: POST
+                passthroughBehavior: when_no_match
+                responses:
+                  default:
+                    statusCode: '200'
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleServiceFunction.Arn}/invocations
+            options:
+              consumes:
+              - application/json
+              produces:
+              - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                responses:
+                  default:
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+                      method.response.header.Access-Control-Allow-Methods: '''DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'''
+                      method.response.header.Access-Control-Allow-Origin: '''*'''
+                    statusCode: '200'
+                type: mock
+        schemes:
+        - https
+        securityDefinitions:
+          vehicle-services-authorizer:
+            in: header
+            name: Authorization
+            type: apiKey
+            x-amazon-apigateway-authorizer:
+              providerARNs:
+              - Fn::GetAtt:
+                - AuthStack
+                - Outputs.UserPoolArn
+              type: cognito_user_pools
+            x-amazon-apigateway-authtype: cognito_user_pools
+        swagger: '2.0'
+      Name:
+        Ref: TelemetryApiName
+      StageName:
+        Ref: TelemetryApiStageName
+    Type: AWS::Serverless::Api
+  TelemetryStorageStack:
+    Properties:
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Subcomponent
+        Value: telemetry-storage
+      - Key: Role
+        Value: Telemetry
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/8045af4594f17a5db7df6d824c84196c.template
+    Type: AWS::CloudFormation::Stack
+  TelemetryStreamStack:
+    Properties:
+      Parameters:
+        RolePaths:
+          Ref: RolePaths
+        TelemetryDataBucket:
+          Fn::GetAtt:
+          - TelemetryStorageStack
+          - Outputs.TelemetryDataBucketName
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Subcomponent
+        Value: telemetry-streams
+      - Key: Role
+        Value: Telemetry
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/831986b4d11a867b6f148dd0aa1d73f7.template
+    Type: AWS::CloudFormation::Stack
+  VehicleServiceFunction:
+    Properties:
+      CodeUri: s3://smarlaxp-tmp/691ddb54fde732f1091510840417213e
+      Description: AWS Connected Vehicle Solution vehicle interface microservice for
+        API
+      Environment:
+        Variables:
+          HEALTH_REPORT_TBL:
+            Fn::GetAtt:
+            - VehicleStorageStack
+            - Outputs.HealthReportTableName
+          VEHICLE_ANOMALY_TBL:
+            Fn::GetAtt:
+            - VehicleStorageStack
+            - Outputs.VehicleAnomalyTableName
+          VEHICLE_DTC_TBL:
+            Fn::GetAtt:
+            - VehicleStorageStack
+            - Outputs.VehicleDtcTableName
+          VEHICLE_OWNER_TBL:
+            Fn::GetAtt:
+            - VehicleStorageStack
+            - Outputs.VehicleOwnerTableName
+          VEHICLE_TRIP_TBL:
+            Fn::GetAtt:
+            - VehicleStorageStack
+            - Outputs.VehicleTripTableName
+      Events: null
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-VehicleService
+      Handler: index.handler
+      MemorySize: 256
+      Role:
+        Fn::GetAtt:
+        - VehicleServiceRole
+        - Arn
+      Runtime: nodejs6.10
+      Timeout: 300
+    Type: AWS::Serverless::Function
+  VehicleServiceRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+            - '*'
+          - Action:
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:DeleteItem
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+            - Fn::GetAtt:
+              - VehicleStorageStack
+              - Outputs.VehicleTripTableArn
+            - Fn::GetAtt:
+              - VehicleStorageStack
+              - Outputs.VehicleOwnerTableArn
+            - Fn::GetAtt:
+              - VehicleStorageStack
+              - Outputs.VehicleDtcTableArn
+            - Fn::GetAtt:
+              - VehicleStorageStack
+              - Outputs.HealthReportTableArn
+            - Fn::GetAtt:
+              - VehicleStorageStack
+              - Outputs.VehicleAnomalyTableArn
+          Version: '2012-10-17'
+        PolicyName: VehicleServicePermissions
+    Type: AWS::IAM::Role
+  VehicleStorageStack:
+    Properties:
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Subcomponent
+        Value: vehicle-storage
+      - Key: Role
+        Value: Storage
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/31eefa0ec2dc48fc0d069f4315193edb.template
+    Type: AWS::CloudFormation::Stack
+Transform: AWS::Serverless-2016-10-31

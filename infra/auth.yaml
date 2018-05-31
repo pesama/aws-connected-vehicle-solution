@@ -1,0 +1,213 @@
+# TODO Make unauth identities configurable?
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  This stack creates the AWS resources for authentication mechanisms used by the Connected Vehicle Solution - CVS.
+  It is configured to spin up as a nested stack, referenced from the core CVS.
+  Version: 2.0.1 # TODO Include dynamic versioning?
+Parameters:
+  RolePaths:
+    Type: String
+    Description: Path to prepend to the roles for IAM organization
+    Default: /connected-vehicle/
+  UserPoolName:
+    Type: String
+    Description: Name of the user pool
+    Default: cv-user-pool
+  UserPoolEmailVerificationMessage:
+    Type: String
+    Description: Text sent to new users over email for verifying their address
+    Default: Your Connected Vehicle verification code is {####}.
+  UserPoolEmailVerificationSubject:
+    Type: String
+    Description: Subject of the email sent to new users over email for verifying their address
+    Default: Your Connected Vehicle verification code
+  UserPoolClientName:
+    Type: String
+    Description: Name of the client used with the User Pool
+    Default: cv-auth-client
+  # XXX Make the attributes for the client customizable?
+  TelemetryTripsDataBucket:
+    Type: String
+    Description: Name of the bucket that stores the trips telemetry data
+  IdentityPoolName:
+    Type: String
+    Description: Name of the Identity Pool
+    Default: ConnectedVehicleIdentities
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref UserPoolName
+      AliasAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: !Ref UserPoolEmailVerificationMessage
+      EmailVerificationSubject: !Ref UserPoolEmailVerificationSubject
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: Yes
+          RequireUppercase: Yes
+          RequireNumbers: Yes
+          RequireSymbols: No
+      Schema:
+        -
+          AttributeDataType: String
+          Name: email
+          Required: Yes
+        -
+          AttributeDataType: String
+          Name: phone_number
+          Required: Yes
+  UserPoolClient:
+    Type: "AWS::Cognito::UserPoolClient"
+    Properties:
+      ClientName: !Ref UserPoolClientName
+      GenerateSecret: False
+      WriteAttributes:
+        - address
+        - email
+        - phone_number
+      ReadAttributes:
+        - name
+        - family_name
+        - given_name
+        - middle_name
+        - nickname
+        - preferred_username
+        - profile
+        - picture
+        - website
+        - gender
+        - birthdate
+        - zoneinfo
+        - locale
+        - updated_at
+        - email
+        - email_verified
+        - address
+        - phone_number
+        - phone_number_verified
+      RefreshTokenValidity: 1
+      UserPoolId: !Ref UserPool
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Ref IdentityPoolName
+      CognitoIdentityProviders:
+        - 
+          ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+      AllowUnauthenticatedIdentities: Yes
+  IdentityPoolUnauthRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Federated:
+                - "cognito-identity.amazonaws.com"
+            Action:
+                - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Sub "${IdentityPool}"
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": "unauthenticated"
+      Policies:
+        - 
+          PolicyName: UnauthAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: MobileAnalyticsEvents
+                Effect: Allow
+                Action:
+                  - "mobileanalytics:PutEvents"
+                Resource: !Sub "arn:aws:cognito-identity:${AWS::Region}:${AWS::AccountId}:identitypool/${IdentityPool}"
+              -
+                Sid: IotPermissions
+                Effect: Allow
+                Action:
+                  - "iot:Connect"
+                  - "iot:Subscribe"
+                  - "iot:Receive"
+                Resource:
+                  - "*"
+      Path: !Ref RolePaths
+  IdentityPoolAuthRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Federated:
+                - "cognito-identity.amazonaws.com"
+            Action:
+                - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud": !Sub "${IdentityPool}"
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": "authenticated"
+      Policies:
+        - 
+          PolicyName: AuthAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: MobileAnalyticsEvents
+                Effect: Allow
+                Action:
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-identity:*"
+                Resource: !Sub "arn:aws:cognito-identity:${AWS::Region}:${AWS::AccountId}:identitypool/${IdentityPool}"
+              -
+                Sid: IotPermissions
+                Effect: Allow
+                Action:
+                  - "iot:Connect"
+                  - "iot:Subscribe"
+                  - "iot:Receive"
+                Resource:
+                  - "*"
+              -
+                Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${TelemetryTripsDataBucket}/*"
+      Path: !Ref RolePaths
+  IdentityPoolRoleAttachment:
+    Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        unauthenticated: !GetAtt IdentityPoolUnauthRole.Arn
+        authenticated: !GetAtt IdentityPoolAuthRole.Arn
+Outputs:
+  UserPoolId:
+    Description: ID of the User Pool
+    Value: !Ref UserPool
+  UserPoolArn:
+    Description: ARN of the UserPool
+    Value: !GetAtt UserPool.Arn
+  UserPoolClientId:
+    Description: ID of the client used within the User Pool
+    Value: !Ref UserPoolClient
+  IdentityPoolId:
+    Description: ID of the Identity Pool
+    Value: !Ref IdentityPool
+
+# TODO Document how to get Auth working (App Client settings)
+# TODO Document how to setup a custom domain
+# TODO Document how the auth is setup

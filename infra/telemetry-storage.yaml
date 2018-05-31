@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  This stack creates the AWS resources needed for storing telemetry information within the Connected Vehicle solution.
+  This stack is configured to be deployed as a nested stack of the core CVS.  
+  Version: 2.0.1 # TODO Include dynamic versioning?
+Resources:
+  TelemetryDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+  TelemetryTripsDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+        -
+          AllowedOrigins:
+            - "*"
+          AllowedMethods:
+            - "HEAD"
+            - "GET"
+          AllowedHeaders:
+            - "*"
+Outputs:
+  TelemetryDataBucketName:
+    Description: Name of the bucket that holds the telemetry data
+    Value: !Ref TelemetryDataBucket
+  TelemetryTripsDataBucketName:
+    Description: Name of the bucket that holds the telemetry trip data
+    Value: !Ref TelemetryTripsDataBucket

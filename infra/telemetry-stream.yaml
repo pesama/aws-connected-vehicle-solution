@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  This stack creates the AWS resources needed for streaing the telemetry information.
+  This stack is configured to be deployed as a nested stack of the core CVS.
+  Version: 2.0.1 # TODO Include dynamic versioning?
+Parameters:
+  RolePaths:
+    Type: String
+    Description: Path for organizing the roles
+  TelemetryDataBucket:
+    Type: String
+    Description: Name of the bucket to store the files into
+Resources:
+  Stream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: "connected-vehicle-telemetry"
+      S3DestinationConfiguration:
+        BucketARN: !Sub "arn:aws:s3:::${TelemetryDataBucket}"
+        BufferingHints:
+          IntervalInSeconds: 300
+          SizeInMBs: 5
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: "/aws/kinesisfirehose/connected-vehicle-telemetry"
+          LogStreamName: "TelemetryDelivery"
+        CompressionFormat: "GZIP"
+        Prefix: "telemetry/"
+        RoleARN: !GetAtt StreamRole.Arn
+  StreamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "firehose.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: StreamPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:AbortMultipartUpload"
+                  - "s3:GetBucketLocation"
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:ListBucketMultipartUploads"
+                  - "s3:PutObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${TelemetryDataBucket}"
+                  - !Sub "arn:aws:s3:::${TelemetryDataBucket}/*"
+                  # TODO - "arn:aws:s3:::%FIREHOSE_BUCKET_NAME%"
+                  # TODO - "arn:aws:s3:::%FIREHOSE_BUCKET_NAME%/*"
+              -
+                Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                  - "lambda:GetFunctionConfiguration"
+                Resource:
+                  - "*" # FIXME this was modified by custom resource
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/aws/kinesisfirehose/connected-vehicle-telemetry:log-stream:*"
+      Path: !Ref RolePaths
+Outputs:
+  Stream:
+    Description: Name of the Telemetry stream
+    Value: !Ref Stream
