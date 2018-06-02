@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  This stack creates the AWS resources for storing the vehicle information within the Connected Vehicle Solution - CVS.
+  Version: 2.0.1 # TODO Include dynamic versioning?
+Resources:
+  VehicleTripTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: vin
+          AttributeType: "S"
+        -
+          AttributeName: trip_id
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: vin
+          KeyType: HASH
+        -
+          AttributeName: trip_id
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 30
+        WriteCapacityUnits: 30 
+  HealthReportTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: vin
+          AttributeType: "S"
+        -
+          AttributeName: report_id
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: vin
+          KeyType: HASH
+        -
+          AttributeName: report_id
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+  VehicleAnomalyTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: vin
+          AttributeType: "S"
+        -
+          AttributeName: anomaly_id
+          AttributeType: "S"
+        -
+          AttributeName: trip_id
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: vin
+          KeyType: HASH
+        -
+          AttributeName: anomaly_id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        -
+          IndexName: vin-trip_id-index
+          KeySchema:
+            - AttributeName: vin
+              KeyType: HASH
+            - AttributeName: trip_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 30
+            WriteCapacityUnits: 30
+      ProvisionedThroughput:
+        ReadCapacityUnits: 30
+        WriteCapacityUnits: 30
+  VehicleOwnerTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: owner_id
+          AttributeType: "S"
+        -
+          AttributeName: vin
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: owner_id
+          KeyType: HASH
+        -
+          AttributeName: vin
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        -
+          IndexName: vin-index
+          KeySchema:
+            - AttributeName: vin
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 30
+            WriteCapacityUnits: 30
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2  
+Outputs:
+  VehicleTripTableName:
+    Description: Name of the VehicleTrip table
+    Value: !Ref VehicleTripTable
+  VehicleTripTableArn:
+    Description: Arn of the VehicleTrip table
+    Value: !GetAtt VehicleTripTable.Arn
+  HealthReportTableName:
+    Description: Name of the HealthReport table
+    Value: !Ref HealthReportTable
+  HealthReportTableArn:
+    Description: Arn of the HealthReport table
+    Value: !GetAtt HealthReportTable.Arn
+  VehicleAnomalyTableName:
+    Description: Name of the VehicleAnomaly table
+    Value: !Ref VehicleAnomalyTable
+  VehicleAnomalyTableArn:
+    Description: Arn of the VehicleAnomaly table
+    Value: !GetAtt VehicleAnomalyTable.Arn
+  VehicleOwnerTableName:
+    Description: Name of the VehicleOwner table
+    Value: !Ref VehicleOwnerTable
+  VehicleOwnerTableArn:
+    Description: Arn of the VehicleOwner table
+    Value: !GetAtt VehicleOwnerTable.Arn

@@ -1,58 +1,54 @@
 # AWS Connected Vehicle Solution
-The AWS Connected Vehicle Solution is a reference implementation that provides a foundation for automotive product transformations for connected vehicle services, autonomous driving, electric powertrains, and shared mobility.
+
+The AWS Connected Vehicle Solution is a reference implementation that provides a foundation for automotive product transformations for connected vehicle services, autonomous driving, electric powertrains, and shared mobility. It has a built-in core that serves the centric functions of a connected vehicle, and is modular and fully extensible so you can adapt it to your needs.
 
 ## Getting Started
+
 To get started with the AWS Connected Vehicle Solution, please review the solution documentation. https://aws.amazon.com/answers/iot/connected-vehicle-solution/
 
-## Building distributables for customization
-* Configure the bucket name of your target Amazon S3 distribution bucket
-```
-export BUCKET_PREFIX=my-bucket-name
-```
+### Deploying the system
 
-* Clone the repository, then build the distibutables:
-```
-cd ./deployment \n
-chmod +x build-s3-dist.sh \n
-./build-s3-dist.sh \n
-```
+You can easily deploy the system by launching the core stack, by clicking on one of the launch stack buttons you can find below.
 
-* Deploy the distibutables to an Amazon S3 bucket in your account. _Note:_ you must have the AWS Command Line Interface installed.
+**TODO**
+| Region        | Launch |
+| ------        | ------ |
+| _us_east_1_   | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png) |
+| _eu_west_1_   | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png) |
 
-```
-cd ./deployment \n
-s3 cp ./dist s3://my-bucket-name/aws-cv-cloud/latest --recursive --profile aws-cred-profile-name \n
-```
+## Solution overview
 
-* Get the link of the aws-connected-vehicle-cloud.template uploaded to your Amazon S3 bucket.
-* Deploy the AWS Connected Vehicle Solution to your account by launching a new AWS CloudFormation stack using the link of the aws-connected-vehicle-cloud.template.
+The Connected Vehicle solution is a fully modular system to allow you to customize the capabilities of your deployment to adapt it as much as possible to your needs. This architecture also allow you - and the community - to create modules that can easily be integrated into the solution for including additional features.
 
-## File Structure
-The AWS Connected Vehicle Solution project consists of microservices that facilitate the functional areas of the platform. These microservices are deployed to a serverless environment in AWS Lambda.
+### Connected Vehicle core
 
-<pre>
-|-source/
-  |-services/
-    |-helper/       [ AWS CloudFormation custom resource deployment helper ]
-  |-services/
-    |-anomaly/      [ microservice for humanization and persistence of identified anomalies ]
-    |-driversafety/ [ microservice to orchestrate the creation of driver scores ]
-    |-dtc/          [ microservice to orchestrate the capture, humanization and persistence of diagnostic trouble codes ]
-    |-jitr/         [ microservice to orchestrate registration and policy creation for just-in-time registration of devices ]    
-    |-marketing/ [ microservice to provide location based marketing based on a defined set of POIs ]
-    |-notification/ [ microservice to send SMS and MQTT notifications for the solution ]
-    |-vehicle/      [ microservice to provide proxy interface for the AWS Connected Vehicle Solution API ]    
-</pre>
+To homogenize the way the solution is deployed, even the core functionalities are represented as modules. These modules are not optional, but having this architecture also allows you to modify the core of the solution, if you plan to have multiple deployments with different sets of features.
 
-Each microservice follows the structure of:
+These are the current core modules:
+* **auth**: Controls authentication and authorization of users for the whole system. 
+* **telemetry**: Handles the mechanisms with which the vehicle interchanges telemetry information with the cloud and other system modules.
+* **vehicles**: Stores the information about the fleet of vehicles.
 
-<pre>
-|-service-name/
-  |-lib/
-    |-[ service module libraries and unit tests ]
-  |-index.js [ injection point for microservice ]
-  |-package.json
-</pre>
+### Default modules
+
+We have made available a set of modules that include some of the most common functionalities for connected vehicles. When creating your deployment, you can configure the modules configured by creating a comma-delimited list of values with all modules you'd like to include. These modules sit in the same repository as the core infrastructure.
+
+* **anomalies**: TODO
+* **driver-safety**: Controls the drivers distractions for the duration of the trips, assigning a score to the driver's behavior for each trip.
+* **dtc**: Handles the Diagnostic Trouble Code information exchange between the vehicle and the cloud.
+* **jitr**: Configures your system for automatically onboarding large quantity of vehicles.
+* **notifications**: Manages the cloud-to-user messages for event notifications.
+* **poi**: Enables you to create Marketing PoI, showing particular information based on location
+
+### 3rd party modules
+
+* **time-series**: TODO
+
+_Have you published a module and it's not on this list? Share it with the community! Send us a PR with your module incldued in the list above. See the [Contributing guide](/CONTRIBUTE.md) for more info._
+
+### Module anatomy
+
+TODO
 
 ***
 

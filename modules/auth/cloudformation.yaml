@@ -25,10 +25,6 @@ Parameters:
     Type: String
     Description: Name of the client used with the User Pool
     Default: cv-auth-client
-  # XXX Make the attributes for the client customizable?
-  TelemetryTripsDataBucket:
-    Type: String
-    Description: Name of the bucket that stores the trips telemetry data
   IdentityPoolName:
     Type: String
     Description: Name of the Identity Pool
@@ -185,7 +181,7 @@ Resources:
                 Action:
                   - "s3:GetObject"
                 Resource:
-                  - !Sub "arn:aws:s3:::${TelemetryTripsDataBucket}/*"
+                  - "*"
       Path: !Ref RolePaths
   IdentityPoolRoleAttachment:
     Type: "AWS::Cognito::IdentityPoolRoleAttachment"

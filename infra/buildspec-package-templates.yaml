@@ -1,0 +1,19 @@
+version: 0.2
+phases:
+  install: 
+    commands:
+      - apt-get update -y
+      - apt-get install -y jq
+      - pip install awscli --upgrade --user
+  build:
+    commands:
+      - mkdir -p ${CODEBUILD_SRC_DIR}/output
+      # Package core
+      - bash ${CODEBUILD_SRC_DIR}/scripts/package.sh
+      - mv ${CODEBUILD_SRC_DIR}/infra/cloudformation.pkg.yaml output/core.yaml
+      # Package internal modules
+      - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $INSTALLED_MODULES
+artifacts:
+  files:
+    - output
+  discard-paths: yes

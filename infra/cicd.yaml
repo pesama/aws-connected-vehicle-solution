@@ -1,0 +1,446 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  CoreStackName:
+    Type: String
+    Description: Name of the core stack
+  RepositoryName:
+    Type: String
+    Description: Name of the repository that stores the solution
+  RepositoryOwner:
+    Type: String
+    Description: Owner of the repository that stores the solution
+  LoggingBucket:
+    Type: String
+    Description: Name of the bucket that stores the system's logs
+  InstalledModules:
+    Type: String
+    Description: List of installed modules for this deployment
+Resources:
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LoggingBucket
+        LogFilePrefix: "s3/artifacts/"
+      VersioningConfiguration:
+        Status: Enabled
+  ArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactsBucket
+      PolicyDocument:
+        Statement: 
+          - 
+            Action: 
+              - "s3:*"
+            Effect: Allow
+            Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+            Principal: 
+              AWS: 
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+  TmpBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LoggingBucket
+        LogFilePrefix: "s3/tmp/"
+  TmpBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TmpBucket
+      PolicyDocument:
+        Statement: 
+          - 
+            Action: 
+              - "s3:*"
+            Effect: Allow
+            Resource: 
+              - !Sub "arn:aws:s3:::${TmpBucket}"
+              - !Sub "arn:aws:s3:::${TmpBucket}/*"
+            Principal: 
+              AWS: 
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location: !Ref ArtifactsBucket
+        Type: S3
+      DisableInboundStageTransitions: []
+      Name: ConnectedVehicleCore
+      RoleArn: !GetAtt PipelineRole.Arn
+      Stages:
+        - 
+          Name: Source
+          Actions:
+            -
+              Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: '1'
+              Configuration:
+                PollForSourceChanges: true
+                Repo: !Ref RepositoryName
+                Branch: master
+                # OAuthToken: Include your OAuth token here if you're cloning over SSH
+                Owner: !Ref RepositoryOwner
+              OutputArtifacts:
+                - Name: SourceCode
+              RunOrder: 1
+        - 
+          Name: Package
+          Actions:
+            - 
+              Name: PackageTemplate
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref PipelinePackageTemplate
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: BuiltTemplateArtifact
+              RunOrder: 1
+            - 
+              Name: PackageArtifacts
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref PipelineDeliverArtifacts
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: BuiltArtifact
+              RunOrder: 1
+        -
+          Name: Deploy
+          Actions:
+            - 
+              Name: PrepareDeployment
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                StackName: !Ref CoreStackName
+                ChangeSetName: Main
+                # TemplatePath: !Sub BuiltTemplateArtifact:Include your OAuth token here if you're cloning over SSH
+                TemplateConfiguration: !Sub BuiltTemplateArtifact::template-configuration.json
+                RoleArn: !GetAtt PipelineDeploymentRole.Arn
+                Capabilities: CAPABILITY_NAMED_IAM
+              InputArtifacts:
+                - Name: BuiltTemplateArtifact
+              RunOrder: 1
+            - 
+              Name: ExecuteDeployment
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                StackName: !Ref CoreStackName
+                ChangeSetName: Main
+                # RoleArn: !GetAttInclude your OAuth token here if you're cloning over SSH
+              RunOrder: 2
+  PipelinePackageTemplate:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: Packages the CloudFormation templates for the  API
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - 
+            Name: TMP_BUCKET
+            Value: !Ref TmpBucket
+          - 
+            Name: ARTIFACTS_BUCKET
+            Value: !Ref ArtifactsBucket
+          - 
+            Name: INSTALLED_MODULES
+            Value: !Ref InstalledModules
+        Image: aws/codebuild/nodejs:7.0.0
+        Type: LINUX_CONTAINER
+      Name: !Sub "${CoreStackName}-package"
+      ServiceRole: !GetAtt PipelinePackageTemplatesRole.Arn
+      Source: 
+        BuildSpec: infra/buildspec-package-templates.yaml
+        Type: CODEPIPELINE
+      Tags:
+        -
+          Key: Role
+          Value: cicd
+        - 
+          Key: Component
+          Value: !Ref CoreStackName
+        - 
+          Key: Module
+          Value: core
+      TimeoutInMinutes: 10
+  PipelineDeliverArtifacts:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: Packages the CloudFormation templates for the  API
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - 
+            Name: ARTIFACTS_BUCKET
+            Value: !Ref ArtifactsBucket
+        Image: aws/codebuild/nodejs:7.0.0
+        Type: LINUX_CONTAINER
+      Name: !Sub "${CoreStackName}-artifactdelivery"
+      ServiceRole: !GetAtt PipelineDeliverArtifactsRole.Arn
+      Source: 
+        BuildSpec: buildspec-artifacts.yaml
+        Type: CODEPIPELINE
+      Tags:
+        -
+          Key: Role
+          Value: cicd
+        - 
+          Key: Component
+          Value: !Ref CoreStackName
+        - 
+          Key: Module
+          Value: core
+      TimeoutInMinutes: 10
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "codepipeline.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: "AllStages"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "ManageArtifacts"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+              - 
+                Sid: "PassRole"
+                Action:
+                  - "iam:PassRole"
+                Effect: "Allow"
+                Resource: "*"
+              - 
+                Sid: "PublishSNS"
+                Action:
+                  - "sns:Publish"
+                Effect: "Allow"
+                Resource: "*"
+        - 
+          PolicyName: "SourceStage"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "ReadRepository"
+                Action:
+                  - "codecommit:GetBranch"
+                  - "codecommit:GetCommit"
+                  - "codecommit:UploadArchive"
+                  - "codecommit:GetUploadArchiveStatus"
+                  - "codecommit:CancelUploadArchive"
+                Effect: "Allow"
+                Resource: "*"
+        - 
+          PolicyName: "BuildStage"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "PackageTemplates"
+                Action:
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuilds"
+                Effect: "Allow"
+                Resource: !GetAtt PipelinePackageTemplate.Arn
+              - 
+                Sid: "PackageArtifacts"
+                Action:
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuilds"
+                Effect: "Allow"
+                Resource: !GetAtt PipelineDeliverArtifacts.Arn
+        - 
+          PolicyName: "DeployStage"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "CloudFormationManagement"
+                Action:
+                  - "cloudformation:CreateChangeSet"
+                  - "cloudformation:DeleteChangeSet"
+                  - "cloudformation:DescribeChangeSet"
+                  - "cloudformation:DescribeStacks"
+                  - "cloudformation:ExecuteChangeSet"
+                Effect: "Allow"
+                Resource: "*"
+        - 
+          PolicyName: "CloudWatchLogs"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
+  PipelinePackageTemplatesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "codebuild.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: "ManageArtifacts"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+        - 
+          PolicyName: "StoreTemporaryFiles"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "s3:PutObject"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:s3:::${TmpBucket}/*"
+        - 
+          PolicyName: "CloudWatchLogs"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
+  PipelineDeliverArtifactsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "codebuild.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: "ManageArtifacts"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+        - 
+          PolicyName: "StoreTemporaryFiles"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "s3:PutObject"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:s3:::${TmpBucket}/*"
+        - 
+          PolicyName: "CloudWatchLogs"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
+  PipelineDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "cloudformation.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: "AdministratorAccess"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "AdministratorAccess"
+                Action: "*"
+                Effect: "Allow"
+                Resource: "*"

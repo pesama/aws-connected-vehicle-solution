@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  This stack creates the AWS resources needed for storing and managing telemetry information within the Connected Vehicle solution.
+  Version: 2.0.1 # TODO Include dynamic versioning?
+Parameters:
+  RolePaths:
+    Type: String
+    Description: Path for organizing the roles
+Resources:
+  TelemetryDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+  TelemetryTripsDataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+        -
+          AllowedOrigins:
+            - "*"
+          AllowedMethods:
+            - "HEAD"
+            - "GET"
+          AllowedHeaders:
+            - "*"
+  Stream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: "connected-vehicle-telemetry"
+      S3DestinationConfiguration:
+        BucketARN: !Sub "arn:aws:s3:::${TelemetryDataBucket}"
+        BufferingHints:
+          IntervalInSeconds: 300
+          SizeInMBs: 5
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: "/aws/kinesisfirehose/connected-vehicle-telemetry"
+          LogStreamName: "TelemetryDelivery"
+        CompressionFormat: "GZIP"
+        Prefix: "telemetry/"
+        RoleARN: !GetAtt StreamRole.Arn
+  StreamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "firehose.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: StreamPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:AbortMultipartUpload"
+                  - "s3:GetBucketLocation"
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:ListBucketMultipartUploads"
+                  - "s3:PutObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::${TelemetryDataBucket}"
+                  - !Sub "arn:aws:s3:::${TelemetryDataBucket}/*"
+                  # TODO - "arn:aws:s3:::%FIREHOSE_BUCKET_NAME%"
+                  # TODO - "arn:aws:s3:::%FIREHOSE_BUCKET_NAME%/*"
+              -
+                Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                  - "lambda:GetFunctionConfiguration"
+                Resource:
+                  - "*" # FIXME this was modified by custom resource
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/aws/kinesisfirehose/connected-vehicle-telemetry:log-stream:*"
+      Path: !ImportValue connected-vehicle-roles-path
+  TelemetryRawStorageRule:
+    Type: "AWS::IoT::TopicRule"
+    Properties:
+      RuleName: "ConnectedVehicleTelematicsStorage"
+      TopicRulePayload:
+        RuleDisabled: No
+        Description: "Persistent storage of connected vehicle telematics data."
+        Sql: >-
+          SELECT * FROM 'connectedcar/telemetry/#'
+        Actions:
+          -
+            Firehose:
+              DeliveryStreamName: !Ref TelemetryDeliveryStream
+              RoleArn: !GetAtt TelemetryIotActionsRole.Arn
+              Separator: "\n"
+  TelemetryIotActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                -
+                  Effect: "Allow"
+                  Principal:
+                    Service:
+                      - "iot.amazonaws.com"
+                  Action:
+                    - "sts:AssumeRole"
+        Policies:
+          - 
+            PolicyName: IoTPermissions
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                -
+                  Effect: "Allow"
+                  Action:
+                    - "firehose:PutRecord"
+                  Resource:
+                    - "*" # FIXME Work around this when solving module dependencies
+                -
+                  Effect: "Allow"
+                  Action:
+                    - "dynamodb:PutItem"
+                  Resource:
+                    - "*" # FIXME Work around this when solving module dependencies
+        Path: !Ref RolePaths
+Outputs:
+  TelemetryDataBucketName:
+    Description: Name of the bucket that holds the telemetry data
+    Value: !Ref TelemetryDataBucket
+  TelemetryTripsDataBucketName:
+    Description: Name of the bucket that holds the telemetry trip data
+    Value: !Ref TelemetryTripsDataBucket
+  Stream:
+    Description: Name of the Telemetry stream
+    Value: !Ref Stream
