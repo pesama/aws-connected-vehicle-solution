@@ -15,6 +15,9 @@ Parameters:
   InstalledModules:
     Type: String
     Description: List of installed modules for this deployment
+  OAuthToken:
+    Type: String
+    Description: Token used to fetch code from GitHub
 Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
@@ -84,7 +87,7 @@ Resources:
                 PollForSourceChanges: true
                 Repo: !Ref RepositoryName
                 Branch: master
-                # OAuthToken: Include your OAuth token here if you're cloning over SSH
+                OAuthToken: !Ref OAuthToken
                 Owner: !Ref RepositoryOwner
               OutputArtifacts:
                 - Name: SourceCode
@@ -121,7 +124,7 @@ Resources:
                 - Name: BuiltArtifact
               RunOrder: 1
         -
-          Name: Deploy
+          Name: DeployCore
           Actions:
             - 
               Name: PrepareDeployment
@@ -132,10 +135,9 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                StackName: !Ref CoreStackName
+                StackName: !Sub "${CoreStackName}Core"
                 ChangeSetName: Main
-                # TemplatePath: !Sub BuiltTemplateArtifact:Include your OAuth token here if you're cloning over SSH
-                TemplateConfiguration: !Sub BuiltTemplateArtifact::template-configuration.json
+                TemplatePath: !Sub BuiltTemplateArtifact:core.yaml
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
                 Capabilities: CAPABILITY_NAMED_IAM
               InputArtifacts:
@@ -150,9 +152,42 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
-                StackName: !Ref CoreStackName
+                StackName: !Sub "${CoreStackName}Core"
                 ChangeSetName: Main
-                # RoleArn: !GetAttInclude your OAuth token here if you're cloning over SSH
+                RoleArn: !GetAtt PipelineDeploymentRole.Arn
+              RunOrder: 2
+        -
+          Name: DeployModules
+          Actions:
+            - 
+              Name: PrepareDeployment
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                StackName: !Sub "${CoreStackName}Modules"
+                ChangeSetName: Main
+                TemplatePath: !Sub BuiltTemplateArtifact:modules.json
+                RoleArn: !GetAtt PipelineDeploymentRole.Arn
+                Capabilities: CAPABILITY_NAMED_IAM
+              InputArtifacts:
+                - Name: BuiltTemplateArtifact
+              RunOrder: 1
+            - 
+              Name: ExecuteDeployment
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                StackName: !Sub "${CoreStackName}Modules"
+                ChangeSetName: Main
+                RoleArn: !GetAtt PipelineDeploymentRole.Arn
               RunOrder: 2
   PipelinePackageTemplate:
     Type: AWS::CodeBuild::Project
@@ -172,6 +207,9 @@ Resources:
           - 
             Name: INSTALLED_MODULES
             Value: !Ref InstalledModules
+          - 
+            Name: SOLUTION_NAME
+            Value: !Ref CoreStackName
         Image: aws/codebuild/nodejs:7.0.0
         Type: LINUX_CONTAINER
       Name: !Sub "${CoreStackName}-package"

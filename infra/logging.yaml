@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Provides the system with centralized logging tools, that can be thereafter used for logging purposes.
+Resources:
+  LoggingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+  LoggingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LoggingBucket
+      PolicyDocument:
+        Statement: 
+          - 
+            Action: 
+              - "s3:GetBucketAcl"
+              - "s3:PutObject"
+            Effect: Allow
+            Resource: 
+              - !Sub "arn:aws:s3:::${LoggingBucket}"
+              - !Sub "arn:aws:s3:::${LoggingBucket}/*"
+            Principal: 
+              Service:
+                - !Sub "logs.${AWS::Region}.amazonaws.com"

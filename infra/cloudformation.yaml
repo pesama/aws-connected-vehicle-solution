@@ -42,6 +42,11 @@ Parameters:
     Default: /connected-vehicle/
     AllowedPattern: /(.)+/
     ConstraintDescription: The Path must start and end with a slash
+  GithubOAuthToken:
+    Type: String
+    Description: |
+      Github token used to authorize the cicd pipeline to sync with the repository that stores the code.
+    NoEcho: Yes
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups: 
@@ -59,49 +64,45 @@ Metadata:
           - CoreRepositoryName
           - CoreRepositoryBranch
           - CoreRepositoryOwner
+          - GithubOAuthToken
       - 
         Label: Advanced
         Parameters:
           - RolesPath
     ParameterLabels: 
+      CoreModules: Mandatory modules (do not modify this)
       CoreRepositoryName: Core repository name
       CoreRepositoryBranch: Core repository branch
       CoreRepositoryOwner: Core repository owner
+      GithubOAuthToken: Github OAuth token
       IncludedModules: Additional modules for your deployment
-      CoreModules: Mandatory modules (do not modify this)
       RolesPath: Path for the IAM roles
 Resources:
-  LoggingBucket:
-    Type: AWS::S3::Bucket
+  LoggingStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      AccessControl: LogDeliveryWrite
-  LoggingBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref LoggingBucket
-      PolicyDocument:
-        Statement: 
-          - 
-            Action: 
-              - "s3:GetBucketAcl"
-              - "s3:PutObject"
-            Effect: Allow
-            Resource: 
-              - !Sub "arn:aws:s3:::${LoggingBucket}"
-              - !Sub "arn:aws:s3:::${LoggingBucket}/*"
-            Principal: 
-              Service:
-                - !Sub "logs.${AWS::Region}.amazonaws.com"
+      Tags:
+        - 
+          Key: Component
+          Value: !Ref AWS::StackName
+        - 
+          Key: Module
+          Value: core
+        - 
+          Key: Role
+          Value: logging
+      TemplateURL: ./logging.yaml
   CICDPipeline:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
+        CoreModules: !Ref CoreModules
         CoreStackName: !Ref AWS::StackName
+        InstalledModules: !Ref InstalledModules
+        LoggingBucket: !Ref LoggingBucket
+        OAuthToken: !Ref GithubOAuthToken
         RepositoryName: !Ref CoreRepositoryName
         RepositoryOwner: !Ref CoreRepositoryOwner
-        LoggingBucket: !Ref LoggingBucket
-        CoreModules: !Ref CoreModules
-        InstalledModules: !Ref InstalledModules
       Tags: 
         - 
           Key: Component

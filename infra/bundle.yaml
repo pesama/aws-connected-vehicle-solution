@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Provides a bundle installation of the connected vehicle's core functionality. It is meant for quickly asserting the validity of the solution to your needs; for a long-term usage of the system we highly recommend you using the inSync version.
+Resources:
+  LoggingStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Tags:
+        - 
+          Key: Component
+          Value: !Ref AWS::StackName
+        - 
+          Key: Role
+          Value: logging
+      TemplateURL: ./logging.yaml
+  AuthModuleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Tags:
+        - 
+          Key: Component
+          Value: !Ref AWS::StackName
+        - 
+          Key: Role
+          Value: auth
+      TemplateURL: ../modules/auth/cloudformation.yaml
+  FleetModuleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Tags:
+        - 
+          Key: Component
+          Value: !Ref AWS::StackName
+        - 
+          Key: Role
+          Value: fleet
+      TemplateURL: ../modules/fleet/cloudformation.yaml
+  TelemetryModuleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Tags:
+        - 
+          Key: Component
+          Value: !Ref AWS::StackName
+        - 
+          Key: Role
+          Value: telemetry
+      TemplateURL: ../modules/telemetry/cloudformation.yaml

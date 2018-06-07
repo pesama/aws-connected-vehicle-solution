@@ -5,6 +5,7 @@ phases:
       - apt-get update -y
       - apt-get install -y jq
       - pip install awscli --upgrade --user
+      - cd ${CODEBUILD_SRC_DIR}/scripts/modules/pipeline-creation && npm install
   build:
     commands:
       - mkdir -p ${CODEBUILD_SRC_DIR}/output
@@ -13,6 +14,8 @@ phases:
       - mv ${CODEBUILD_SRC_DIR}/infra/cloudformation.pkg.yaml output/core.yaml
       # Package internal modules
       - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $INSTALLED_MODULES
+      # Create module pipeline definition
+      - node ${CODEBUILD_SRC_DIR}/scripts/modules/pipeline-creation/index.js
 artifacts:
   files:
     - output

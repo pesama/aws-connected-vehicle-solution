@@ -34,46 +34,6 @@ Resources:
               OutputArtifacts:
                 - Name: SourceCode
               RunOrder: 1
-        -
-          Name: Deploy
-          Actions:
-            - 
-              Name: PrepareDeployment
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CloudFormation
-                Version: '1'
-              Configuration:
-                ActionMode: CHANGE_SET_REPLACE
-                StackName:
-                  Fn::Ref: CoreStackName
-                ChangeSetName: Main
-                TemplatePath:
-                  Fn::Sub: BuiltTemplateArtifact:whatever.yaml
-                TemplateConfiguration:
-                  Fn::Sub: BuiltTemplateArtifact::template-configuration.json
-                RoleArn:
-                  Fn::GetAtt: PipelineDeploymentRole.Arn
-                Capabilities: CAPABILITY_NAMED_IAM
-              InputArtifacts:
-                - Name: BuiltTemplateArtifact
-              RunOrder: 1
-            - 
-              Name: ExecuteDeployment
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CloudFormation
-                Version: '1'
-              Configuration:
-                ActionMode: CHANGE_SET_EXECUTE
-                StackName:
-                  Fn::Ref: CoreStackName
-                ChangeSetName: Main
-                RoleArn:
-                  Fn::GetAtt: PipelineDeploymentRole.Arn
-              RunOrder: 2
   PipelineRole:
     Type: AWS::IAM::Role
     Properties:

@@ -1,0 +1,103 @@
+# This is the directory of modules.
+# TODO Split in files
+Modules:
+  - 
+    Name: auth
+    Core: Yes
+    Location:
+      Type: local
+      Source: auth
+  - 
+    Name: fleet
+    Core: Yes
+    Location:
+      Type: local
+      Source: fleet
+  - 
+    Name: telemetry
+    Core: Yes
+    Location:
+      Type: local
+      Source: telemetry
+  - 
+    Name: anomalies
+    Consumes:
+      - fleet
+    Location: 
+      Type: local
+      Source: anomalies
+  - 
+    Name: api
+    Consumes:
+      - auth
+      - fleet
+      - telemetry
+    Location: 
+      Type: local
+      Source: api
+  - 
+    Name: driver-safety
+    Consumes:
+      - auth
+      - fleet
+      - telemetry
+    Location: 
+      Type: local
+      Source: driver-safety
+  - 
+    Name: dtc
+    Consumes:
+      - fleet
+      - telemetry
+    Location: 
+      Type: local
+      Source: dtc
+  - 
+    Name: jitr
+    Consumes:
+      - fleet
+    Location: 
+      Type: local
+      Source: jitr
+  - 
+    Name: notifications
+    Consumes:
+      - auth
+      - fleet
+      - telemetry
+    Location: 
+      Type: local
+      Source: notifications
+  - 
+    Name: poi
+    Consumes:
+      - auth
+      - fleet
+      - telemetry
+    Location: 
+      Type: local
+      Source: poi
+  - 
+    Name: web-dashboard
+    Consumes:
+      - api
+      - auth
+    Location: 
+      Type: github
+      Source: pesama/aws-connected-vehicle-dashboard
+  - 
+    Name: test1
+    Consumes:
+      - web-dashboard
+      - poi
+    Location: 
+      Type: github
+      Source: pesama/aws-connected-vehicle-dashboard
+  - 
+    Name: test2
+    Consumes:
+      - test1
+      - anomalies
+    Location: 
+      Type: github
+      Source: pesama/aws-connected-vehicle-dashboard

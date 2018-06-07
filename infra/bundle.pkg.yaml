@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Provides a bundle installation of the connected vehicle''s core functionality.
+  It is meant for quickly asserting the validity of the solution to your needs; for
+  a long-term usage of the system we highly recommend you using the inSync version.
+
+  '
+Resources:
+  AuthModuleStack:
+    Properties:
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Role
+        Value: auth
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/2c2ce40f2326d5b0873959818340fc7a.template
+    Type: AWS::CloudFormation::Stack
+  FleetModuleStack:
+    Properties:
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Role
+        Value: fleet
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/b0c4c1d7ed8e2146f26768cd0d91eff0.template
+    Type: AWS::CloudFormation::Stack
+  LoggingStack:
+    Properties:
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Role
+        Value: logging
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/bece2f42bffc425c1d393ded6f5e4a07.template
+    Type: AWS::CloudFormation::Stack
+  TelemetryModuleStack:
+    Properties:
+      Tags:
+      - Key: Component
+        Value:
+          Ref: AWS::StackName
+      - Key: Role
+        Value: telemetry
+      TemplateURL: https://s3.amazonaws.com/smarlaxp-tmp/8c412bc9567540f21d598d57646b55ba.template
+    Type: AWS::CloudFormation::Stack
