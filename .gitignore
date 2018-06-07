@@ -6,4 +6,4 @@ secrets/
 **/.zip
 **/.DS_Store
 
-**/cloudformation.pkg.yaml
+**/*.pkg.yaml
