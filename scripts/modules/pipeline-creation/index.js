@@ -250,7 +250,8 @@ function isModuleDependant(sourceName, targetName) {
 
 function concatArrays (input) {
   console.log('Concat')
-  const first = input.splice(0, 1)
-  const output = first.concat.apply(first, input)
+  const first = input[0]
+  const second = input[1]
+  const output = first.concat(second)
   return output
 }
