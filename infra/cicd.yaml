@@ -194,6 +194,9 @@ Resources:
             Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
           - 
+            Name: CORE_MODULES
+            Value: !Ref CoreModules
+          - 
             Name: INSTALLED_MODULES
             Value: !Ref InstalledModules
           - 

@@ -13,9 +13,9 @@ phases:
       - bash ${CODEBUILD_SRC_DIR}/scripts/package.sh
       - mv ${CODEBUILD_SRC_DIR}/infra/cloudformation.pkg.yaml ${CODEBUILD_SRC_DIR}/output/main.yaml
       # Package core modules
-      - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $CORE_MODULES
+      - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $CORE_MODULES ${CODEBUILD_SRC_DIR}/output
       # Package modules
-      - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $INSTALLED_MODULES
+      - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $INSTALLED_MODULES ${CODEBUILD_SRC_DIR}/output
       # Create module pipeline definition
       - node ${CODEBUILD_SRC_DIR}/scripts/modules/pipeline-creation/index.js
 artifacts:
