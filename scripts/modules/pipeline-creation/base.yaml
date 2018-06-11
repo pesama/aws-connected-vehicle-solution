@@ -30,12 +30,12 @@ Resources:
               Configuration:
                 PollForSourceChanges: No
                 Repo:
-                  Fn::ImportValue: connected-vehicle-source-repository-name
+                  Fn::ImportValue: connected-vehicle-core-repository-name
                 Branch: master
                 OAuthToken:
                   Ref: OAuthToken
                 Owner:
-                  Fn::ImportValue: connected-vehicle-source-repository-owner
+                  Fn::ImportValue: connected-vehicle-core-repository-owner
               OutputArtifacts:
                 - Name: SourceCode
               RunOrder: 1

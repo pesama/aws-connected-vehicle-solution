@@ -154,11 +154,11 @@ Outputs:
       Name: connected-vehicle-cicd-artifacts-bucket
   CodeRepositoryOwner:
     Description: Owner of the repository that stores the code of this solution
-    Value: !Ref RepositoryOwner
+    Value: !Ref CoreRepositoryOwner
     Export:
-      Name: connected-vehicle-source-repository-owner
+      Name: connected-vehicle-core-repository-owner
   CodeRepositoryName:
     Description: Name of the repository that stores the code of this solution
-    Value: !Ref RepositoryName
+    Value: !Ref CoreRepositoryName
     Export:
-      Name: connected-vehicle-source-repository-name
+      Name: connected-vehicle-core-repository-name
