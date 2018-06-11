@@ -46,7 +46,7 @@ Parameters:
     AllowedPattern: /(.)+/
     ConstraintDescription: The Path must start and end with a slash
   GithubOAuthToken:
-    Type: AWS::Parameter::Value<String>
+    Type: String
     Default: GITHUB_OUTH_TOKEN
     Description: |
       Github token used to authorize the cicd pipeline to sync with the repository that stores the code.
