@@ -126,7 +126,7 @@ Resources:
                 ActionMode: CHANGE_SET_REPLACE
                 StackName: !Sub "${CoreStackName}Core"
                 ChangeSetName: Main
-                TemplatePath: !Sub BuiltTemplateArtifact:main.yaml
+                TemplatePath: BuiltTemplateArtifact::main.yaml
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
                 Capabilities: CAPABILITY_NAMED_IAM
               InputArtifacts:
@@ -159,7 +159,7 @@ Resources:
                 ActionMode: CHANGE_SET_REPLACE
                 StackName: !Sub "${CoreStackName}Modules"
                 ChangeSetName: Main
-                TemplatePath: !Sub BuiltTemplateArtifact:modules.json
+                TemplatePath: BuiltTemplateArtifact::modules.json
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
                 Capabilities: CAPABILITY_NAMED_IAM
               InputArtifacts:
