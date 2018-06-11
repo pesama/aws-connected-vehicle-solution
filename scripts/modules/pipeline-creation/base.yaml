@@ -1,4 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  OAuthToken:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: Token used to fetch code from Gitub
+    Default: GITHUB_OAUTH_TOKEN
 Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -22,14 +27,14 @@ Resources:
                 Provider: GitHub
                 Version: '1'
               Configuration:
-                PollForSourceChanges: true
+                PollForSourceChanges: No
                 Repo:
-                  Fn::Ref: RepositoryName
+                  Fn::ImportValue: connected-vehicle-source-repository-name
                 Branch: master
                 OAuthToken:
-                  Fn::Ref: OAuthToken
+                  Ref: OAuthToken
                 Owner:
-                  Fn::Ref: RepositoryOwner
+                  Fn::ImportValue: connected-vehicle-source-repository-owner
               OutputArtifacts:
                 - Name: SourceCode
               RunOrder: 1
@@ -61,7 +66,9 @@ Resources:
                 Resource:
                   Fn::Sub: 
                     - "arn:aws:s3:::${ArtifactsBucket}/*"
-                    - { ArtifactsBucket: !ImportValue connected-vehicle-cicd-artifacts-bucket }
+                    -  
+                      ArtifactsBucket: 
+                        Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
               - 
                 Sid: "PassRole"
                 Action:
