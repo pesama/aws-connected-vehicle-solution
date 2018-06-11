@@ -124,7 +124,7 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                StackName: !Sub "${CoreStackName}Core"
+                StackName: !Ref CoreStackName
                 ChangeSetName: Main
                 TemplatePath: BuiltTemplateArtifact::main.yaml
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
@@ -141,7 +141,7 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
-                StackName: !Sub "${CoreStackName}Core"
+                StackName: !Ref CoreStackName
                 ChangeSetName: Main
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
               RunOrder: 2
@@ -157,7 +157,7 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                StackName: !Sub "${CoreStackName}Modules"
+                StackName: !Sub "${CoreStackName}-modules"
                 ChangeSetName: Main
                 TemplatePath: BuiltTemplateArtifact::modules.json
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
@@ -174,7 +174,7 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
-                StackName: !Sub "${CoreStackName}Modules"
+                StackName: !Sub "${CoreStackName}-modules"
                 ChangeSetName: Main
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
               RunOrder: 2
