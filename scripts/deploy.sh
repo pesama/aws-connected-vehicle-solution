@@ -22,7 +22,7 @@ aws cloudformation deploy \
   --template-file $project_dir/infra/cloudformation.pkg.yaml \
   --stack-name $STACK_NAME \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides "GithubOAuthToken=$OAUTH_TOKEN"
+  --parameter-overrides "GithubOAuthToken=GITHUB_OAUTH_TOKEN"
 prev_code=$(echo $?)
 if [ "0" != $prev_code ]; then
   echo "ERROR: Failed to deploy stack."
