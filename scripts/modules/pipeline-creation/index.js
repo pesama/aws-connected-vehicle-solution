@@ -249,9 +249,8 @@ function isModuleDependant(sourceName, targetName) {
 }
 
 function concatArrays (input) {
-  console.log('Concat')
   const first = input[0]
   const second = input[1]
   const output = first.concat(second)
-  return output
+  return output.filter(item => !!item)
 }
