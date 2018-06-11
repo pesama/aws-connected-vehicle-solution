@@ -11,7 +11,7 @@ phases:
       - mkdir -p ${CODEBUILD_SRC_DIR}/output
       # Package main infrastructure
       - bash ${CODEBUILD_SRC_DIR}/scripts/package.sh
-      - mv ${CODEBUILD_SRC_DIR}/infra/cloudformation.pkg.yaml output/main.yaml
+      - mv ${CODEBUILD_SRC_DIR}/infra/cloudformation.pkg.yaml ${CODEBUILD_SRC_DIR}/output/main.yaml
       # Package core modules
       - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $CORE_MODULES
       # Package modules
