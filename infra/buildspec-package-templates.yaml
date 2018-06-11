@@ -20,5 +20,5 @@ phases:
       - node ${CODEBUILD_SRC_DIR}/scripts/modules/pipeline-creation/index.js
 artifacts:
   files:
-    - output
+    - output/*
   discard-paths: yes
