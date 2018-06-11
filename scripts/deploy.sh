@@ -2,6 +2,7 @@
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 project_dir="${script_dir}/.."
 
+source $project_dir/secrets/.credentials
 source $script_dir/config.sh
 
 echo "INFO: Deploying resume stack"
@@ -20,7 +21,8 @@ echo "INFO: Deploying stack"
 aws cloudformation deploy \
   --template-file $project_dir/infra/cloudformation.pkg.yaml \
   --stack-name $STACK_NAME \
-  --capabilities CAPABILITY_IAM
+  --capabilities CAPABILITY_IAM \
+  --parameter-overrides "GithubOAuthToken=$OAUTH_TOKEN"
 prev_code=$(echo $?)
 if [ "0" != $prev_code ]; then
   echo "ERROR: Failed to deploy stack."

@@ -23,3 +23,9 @@ Resources:
             Principal: 
               Service:
                 - !Sub "logs.${AWS::Region}.amazonaws.com"
+Outputs:
+  LoggingBucketName:
+    Description: Name of the bucket used for storing logs
+    Value: !Ref LoggingBucket
+    Export:
+      Name: connected-vehicle-logging-bucket

@@ -12,6 +12,9 @@ Parameters:
   LoggingBucket:
     Type: String
     Description: Name of the bucket that stores the system's logs
+  CoreModules:
+    Type: String
+    Description: List of modules that form part of the core of the solution
   InstalledModules:
     Type: String
     Description: List of installed modules for this deployment
@@ -93,7 +96,7 @@ Resources:
                 - Name: SourceCode
               RunOrder: 1
         - 
-          Name: Package
+          Name: PrepareSolution
           Actions:
             - 
               Name: PackageTemplate
@@ -108,20 +111,6 @@ Resources:
                 - Name: SourceCode
               OutputArtifacts:
                 - Name: BuiltTemplateArtifact
-              RunOrder: 1
-            - 
-              Name: PackageArtifacts
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: '1'
-              Configuration:
-                ProjectName: !Ref PipelineDeliverArtifacts
-              InputArtifacts:
-                - Name: SourceCode
-              OutputArtifacts:
-                - Name: BuiltArtifact
               RunOrder: 1
         -
           Name: DeployCore

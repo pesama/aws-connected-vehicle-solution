@@ -11,17 +11,20 @@ Parameters:
     ConstraintDescription: |
       Currently the Connected Vehicle solution needs to have the auth, telemetry and vehicle modules enabled to work properly.
       You must leave this value as its default
+    Default: auth,fleet,telemetry
   InstalledModules:
     Type: CommaDelimitedList
     Description: List of modules included in the current deployment of the solution
-    AllowedValues: 
-      - anomalies
-      - driver-safety
-      - dtc
-      - fleet
-      - jitr
-      - notifications
-      - poi
+    # TODO Fix this.
+    # AllowedValues: 
+    #   - anomalies
+    #   - api
+    #   - driver-safety
+    #   - dtc
+    #   - jitr
+    #   - notifications
+    #   - poi
+    Default: api,driver-safety,dtc
   CoreRepositoryName:
     Type: String
     Description: |
@@ -96,10 +99,12 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        CoreModules: !Ref CoreModules
+        CoreModules: 
+          Fn::Join: [',', !Ref CoreModules]
         CoreStackName: !Ref AWS::StackName
-        InstalledModules: !Ref InstalledModules
-        LoggingBucket: !Ref LoggingBucket
+        InstalledModules: 
+          Fn::Join: [',', !Ref InstalledModules]
+        LoggingBucket: !GetAtt LoggingStack.Outputs.LoggingBucketName
         OAuthToken: !Ref GithubOAuthToken
         RepositoryName: !Ref CoreRepositoryName
         RepositoryOwner: !Ref CoreRepositoryOwner
