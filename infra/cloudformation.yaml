@@ -147,3 +147,8 @@ Outputs:
         - !Ref InstalledModules
     Export:
       Name: connected-vehicle-installed-modules
+  CICDArtifactsBucket:
+    Description: Name of the artifacts bucket for cicd
+    Value: !GetAtt CICDPipeline.Outputs.ArtifactsBucketName
+    Export:
+      Name: connected-vehicle-cicd-artifacts-bucket

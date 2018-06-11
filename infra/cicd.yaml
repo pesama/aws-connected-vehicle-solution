@@ -474,3 +474,7 @@ Resources:
                 Action: "*"
                 Effect: "Allow"
                 Resource: "*"
+Outputs: 
+  ArtifactsBucketName:
+    Description: Name of the artifacts bucket
+    Value: !Ref ArtifactsBucket

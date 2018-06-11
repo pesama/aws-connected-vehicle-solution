@@ -4,8 +4,7 @@ Resources:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       ArtifactStore:
-        Location:
-          Fn::Ref: ArtifactsBucket
+        Location: !ImportValue connected-vehicle-cicd-artifacts-bucket
         Type: S3
       DisableInboundStageTransitions: []
       Name: ConnectedVehicleModules
@@ -60,7 +59,9 @@ Resources:
                   - "s3:PutObject"
                 Effect: "Allow"
                 Resource:
-                  Fn::Sub: "arn:aws:s3:::${ArtifactsBucket}/*"
+                  Fn::Sub: 
+                    - "arn:aws:s3:::${ArtifactsBucket}/*"
+                    - { ArtifactsBucket: !ImportValue connected-vehicle-cicd-artifacts-bucket }
               - 
                 Sid: "PassRole"
                 Action:
