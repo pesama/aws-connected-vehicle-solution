@@ -9,7 +9,8 @@ Resources:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       ArtifactStore:
-        Location: !ImportValue connected-vehicle-cicd-artifacts-bucket
+        Location:
+          Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
         Type: S3
       DisableInboundStageTransitions: []
       Name: ConnectedVehicleModules
