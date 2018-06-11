@@ -126,7 +126,7 @@ Resources:
                 ActionMode: CHANGE_SET_REPLACE
                 StackName: !Sub "${CoreStackName}Core"
                 ChangeSetName: Main
-                TemplatePath: !Sub BuiltTemplateArtifact:core.yaml
+                TemplatePath: !Sub BuiltTemplateArtifact:main.yaml
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
                 Capabilities: CAPABILITY_NAMED_IAM
               InputArtifacts:

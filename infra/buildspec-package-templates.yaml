@@ -9,10 +9,12 @@ phases:
   build:
     commands:
       - mkdir -p ${CODEBUILD_SRC_DIR}/output
-      # Package core
+      # Package main infrastructure
       - bash ${CODEBUILD_SRC_DIR}/scripts/package.sh
       - mv ${CODEBUILD_SRC_DIR}/infra/cloudformation.pkg.yaml output/main.yaml
-      # Package internal modules
+      # Package core modules
+      - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $CORE_MODULES
+      # Package modules
       - bash ${CODEBUILD_SRC_DIR}/scripts/modules/build-all.sh $INSTALLED_MODULES
       # Create module pipeline definition
       - node ${CODEBUILD_SRC_DIR}/scripts/modules/pipeline-creation/index.js

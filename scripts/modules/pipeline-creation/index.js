@@ -17,7 +17,7 @@ if (!solutionNameTmp) {
 const solutionName = solutionNameTmp
 
 // Fetch installed modules
-const installedModulesStr = process.env.INSTALLED_MODULES
+const installedModulesStr = `${process.env.CORE_MODULES},${process.env.INSTALLED_MODULES}`
 if (!installedModulesStr) {
   throw 'ERROR: Failed to fetch installed modules'
 }
@@ -112,10 +112,7 @@ for (let i = 0; i < unresolvedModules.length; i++) {
     throw `ERROR: Module ${moduleName} not resolved`
   }
   
-  const dependencies = module.Consumes.filter(item => {
-    const dep = directory.Modules.filter(item2 => item2.Name === item)[0]
-    return !dep.Core
-  })
+  const dependencies = module.Consumes || []
   
   // Is the module already resolved in previous stages?
   const allResolutions = concatArrays(stages.map(item => item.Modules))
@@ -152,6 +149,8 @@ for (let i = 0; i < unresolvedModules.length; i++) {
 }
 
 stages.push(currentStage)
+
+console.log(JSON.stringify(stages, null, 2))
 console.log('INFO: Finished sorting dependencies.')
 // TODO Start template building.
 const stageDefinitions = stages.map(item => {
@@ -229,10 +228,7 @@ function isModuleResolved(moduleName, resolvedDependencies) {
     throw `ERROR: Module ${moduleName} not resolved`
   }
   
-  const dependencies = module.Consumes.filter(item => {
-    const dep = directory.Modules.filter(item2 => item2.Name === item)[0]
-    return !dep.Core
-  })
+  const dependencies = module.Consumes || []
   
   if (!resolvedDependencies) {
     return !dependencies.length 
@@ -248,12 +244,13 @@ function isModuleDependant(sourceName, targetName) {
     throw `ERROR: Module ${sourceName} not resolved`
   }
   
-  const dependencies = module.Consumes
+  const dependencies = module.Consumes || []
   return dependencies.indexOf(targetName) !== -1
 }
 
 function concatArrays (input) {
-  const first = input.slice(0, 1)
+  console.log('Concat')
+  const first = input.splice(0, 1)
   const output = first.concat.apply(first, input)
   return output
 }
