@@ -156,7 +156,8 @@ Resources:
         detail-type: 
           - AWS API Call via CloudTrail
         detail:
-          eventSource: s3.amazonaws.com
+          eventSource: 
+            - s3.amazonaws.com
           eventName: 
             - PutObject
           resources: 
