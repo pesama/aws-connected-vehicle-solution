@@ -200,9 +200,9 @@ const stageDefinitions = stages.map((item, moduleIndex) => {
             ChangeSetName: changesetName,
             RoleArn: {
               'Fn::GetAtt': 'PipelineDeploymentRole.Arn'
-            },
-            RunOrder: 2
-          }
+            }
+          },
+          RunOrder: 2
         }//,
         // {
         //   // Wait for module deployment?
