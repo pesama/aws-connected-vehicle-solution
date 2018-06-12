@@ -167,7 +167,6 @@ Resources:
           ReadWriteType: WriteOnly
       IsLogging: true
       IsMultiRegionTrail: false
-      KMSKeyId: String
       S3BucketName: 
         Fn::ImportValue: connected-vehicle-logging-bucket
       S3KeyPrefix: trail/
