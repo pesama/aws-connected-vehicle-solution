@@ -32,7 +32,7 @@ Resources:
                 PollForSourceChanges: Yes
                 S3Bucket: 
                   Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
-                S3ObjectKey: ConnectedVehicleModules/core/system/module-definition.yaml
+                S3ObjectKey: core/system/module-definition.yaml
               OutputArtifacts:
                 - Name: SourceCode
               RunOrder: 1
