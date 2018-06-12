@@ -25,8 +25,8 @@ Resources:
               Name: Source
               ActionTypeId:
                 Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
+                Owner: AWS
+                Provider: S3
                 Version: '1'
               Configuration:
                 PollForSourceChanges: Yes
