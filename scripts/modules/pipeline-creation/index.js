@@ -158,7 +158,7 @@ const stageDefinitions = stages.map(item => {
   const stage = {
     Name: item.Name,
     Actions: concatArrays(modules.map((module, index) => {
-      const stackName = `${solutionName}-${module}`
+      const stackName = `${solutionName}-module-${module}`
       const changesetName = `deploy${new Date().getTime()}`
       return [
         {
@@ -177,14 +177,14 @@ const stageDefinitions = stages.map(item => {
             RoleArn: {
               'Fn::GetAtt': 'PipelineDeploymentRole.Arn'
             },
-            Capabilities: 'CAPABILITY_IAM',
-            InputArtifacts: [
-              {
-                Name: 'SourceCode'
-              }
-            ],
-            RunOrder: 1
-          }
+            Capabilities: 'CAPABILITY_IAM'
+          },
+          InputArtifacts: [
+            {
+              Name: 'SourceCode'
+            }
+          ],
+          RunOrder: 1
         },
         {
           Name: 'ExecuteDeployment',

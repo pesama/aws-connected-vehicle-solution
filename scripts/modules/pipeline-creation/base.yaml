@@ -4,6 +4,7 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Token used to fetch code from Gitub
     Default: GITHUB_OAUTH_TOKEN
+    NoEcho: Yes
 Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
