@@ -29,7 +29,7 @@ Resources:
                 Provider: S3
                 Version: '1'
               Configuration:
-                PollForSourceChanges: Yes
+                PollForSourceChanges: false
                 S3Bucket: 
                   Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
                 S3ObjectKey: core/system/module-definition.zip
@@ -146,3 +146,30 @@ Resources:
                 Action: "*"
                 Effect: "Allow"
                 Resource: "*"
+  PipelineTrigger:
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: Triggers the execution of the pipeline upon source changes
+      EventPattern: 
+        source:
+          - "aws.s3"
+        detail-type: 
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource: s3.amazonaws.com
+          eventName: PutObject
+          resources: 
+            ARN:
+              - Fn::Sub: 
+                - "arn:aws:s3:::${ArtifactsBucket}/core/system/module-definition.zip"
+                -  
+                  ArtifactsBucket: 
+                    Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
+
+      Name: ModulesPipelineTrigger
+      State: ENABLED
+      Targets:
+        - 
+          Id: CodePipeline1
+          Arn: 
+            Fn::Sub: "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}"
