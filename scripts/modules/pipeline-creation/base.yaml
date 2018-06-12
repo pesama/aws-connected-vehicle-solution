@@ -4,7 +4,7 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Token used to fetch code from Gitub
     Default: GITHUB_OAUTH_TOKEN
-    NoEcho: Yes
+    NoEcho: True
 Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -163,10 +163,10 @@ Resources:
                         Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
                       ObjectKey: core/system/module-definition.zip
                 
-          IncludeManagementEvents: No
+          IncludeManagementEvents: false
           ReadWriteType: WriteOnly
-      IsLogging: Yes
-      IsMultiRegionTrail: No
+      IsLogging: true
+      IsMultiRegionTrail: false
       KMSKeyId: String
       S3BucketName: 
         Fn::ImportValue: connected-vehicle-logging-bucket
