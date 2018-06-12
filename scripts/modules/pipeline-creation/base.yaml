@@ -175,3 +175,43 @@ Resources:
           Id: CodePipeline1
           Arn: 
             Fn::Sub: "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}"
+          RoleArn: !GetAtt PipelineTriggerRole.Arn
+  PipelineTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "events.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: "CloudWatchLogs"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
+        - 
+          PolicyName: PipelineManagement
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - 
+                Sid: "StartPipeline"
+                Action: 
+                  - "codepipeline:StartExecution"
+                Effect: Allow
+                Resource: 
+                  - Fn::Sub: "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}"
