@@ -190,8 +190,8 @@ Resources:
               InputArtifacts:
                 - Name: SourceCode
               OutputArtifacts:
-                - Name: BuiltTemplateArtifact
-              RunOrder: 1
+                - Name: BuiltModuleDefinition
+              RunOrder: 3
   PipelinePackageTemplate:
     Type: AWS::CodeBuild::Project
     Properties:
