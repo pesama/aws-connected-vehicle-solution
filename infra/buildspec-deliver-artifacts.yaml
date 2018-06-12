@@ -1,0 +1,21 @@
+version: 0.2
+phases:
+  install: 
+    commands:
+      - apt-get update -y
+      - pip install awscli --upgrade --user
+      - cd ${CODEBUILD_SRC_DIR}/scripts/modules/pipeline-creation && npm install
+  build:
+    commands:
+      # Create ZIP file with templates
+      - cd ${CODEBUILD_SRC_DIR}
+      - zip -r ../output.zip .
+      # Upload file to S3
+  post_build:
+    commands:
+      - aws s3 cp --acl bucket-owner-full-control ${CODEBUILD_SRC_DIR}/../output.zip s3://${ARTIFACTS_BUCKET}/core/system/module-definition.zip
+      - mv ${CODEBUILD_SRC_DIR}/../output.zip ${CODEBUILD_SRC_DIR}/
+artifacts:
+  files:
+    - output.zip
+  discard-paths: yes

@@ -29,14 +29,10 @@ Resources:
                 Provider: GitHub
                 Version: '1'
               Configuration:
-                PollForSourceChanges: No
-                Repo:
-                  Fn::ImportValue: connected-vehicle-core-repository-name
-                Branch: master
-                OAuthToken:
-                  Ref: OAuthToken
-                Owner:
-                  Fn::ImportValue: connected-vehicle-core-repository-owner
+                PollForSourceChanges: Yes
+                S3Bucket: 
+                  Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
+                S3ObjectKey: ConnectedVehicleModules/core/system/module-definition.yaml
               OutputArtifacts:
                 - Name: SourceCode
               RunOrder: 1

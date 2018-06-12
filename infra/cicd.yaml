@@ -178,6 +178,20 @@ Resources:
                 ChangeSetName: Main
                 RoleArn: !GetAtt PipelineDeploymentRole.Arn
               RunOrder: 2
+            - 
+              Name: DeliverArtifacts
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref PipelineDeliverArtifacts
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: BuiltTemplateArtifact
+              RunOrder: 1
   PipelinePackageTemplate:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -204,7 +218,7 @@ Resources:
             Value: !Ref CoreStackName
         Image: aws/codebuild/nodejs:7.0.0
         Type: LINUX_CONTAINER
-      Name: !Sub "${CoreStackName}-package"
+      Name: !Sub "${CoreStackName}-core-package"
       ServiceRole: !GetAtt PipelinePackageTemplatesRole.Arn
       Source: 
         BuildSpec: infra/buildspec-package-templates.yaml
@@ -230,14 +244,26 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
           - 
+            Name: TMP_BUCKET
+            Value: !Ref TmpBucket
+          - 
             Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
+          - 
+            Name: CORE_MODULES
+            Value: !Ref CoreModules
+          - 
+            Name: INSTALLED_MODULES
+            Value: !Ref InstalledModules
+          - 
+            Name: SOLUTION_NAME
+            Value: !Ref CoreStackName
         Image: aws/codebuild/nodejs:7.0.0
         Type: LINUX_CONTAINER
-      Name: !Sub "${CoreStackName}-artifactdelivery"
+      Name: !Sub "${CoreStackName}-core-deliver"
       ServiceRole: !GetAtt PipelineDeliverArtifactsRole.Arn
       Source: 
-        BuildSpec: buildspec-artifacts.yaml
+        BuildSpec: infra/buildspec-artifact-delivery.yaml
         Type: CODEPIPELINE
       Tags:
         -
