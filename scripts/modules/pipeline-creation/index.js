@@ -249,8 +249,15 @@ function isModuleDependant(sourceName, targetName) {
 }
 
 function concatArrays (input) {
-  const first = input[0]
-  const second = input[1]
-  const output = first.concat(second)
-  return output.filter(item => !!item)
+  let ret = []
+  for (let i = 0; i < input.length; i++) {
+    const item = input[i]
+    if (item instanceof Array) {
+      ret = ret.concat(item)
+    } else {
+      ret.push(item)
+    }
+  }
+
+  return ret
 }
