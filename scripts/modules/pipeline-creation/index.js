@@ -162,7 +162,7 @@ const stageDefinitions = stages.map((item, moduleIndex) => {
       const changesetName = `deploy${new Date().getTime()}`
       return [
         {
-          Name: `${item.Name}ModulePreparation`,
+          Name: `${module}ModulePreparation`,
           ActionTypeId: {
             Category: 'Deploy',
             Owner: 'AWS',
@@ -187,7 +187,7 @@ const stageDefinitions = stages.map((item, moduleIndex) => {
           RunOrder: 1
         },
         {
-          Name: `${item.Name}ModuleDeployment`,
+          Name: `${module}ModuleDeployment`,
           ActionTypeId: {
             Category: 'Deploy',
             Owner: 'AWS',
