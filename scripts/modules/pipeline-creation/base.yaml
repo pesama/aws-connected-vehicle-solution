@@ -146,6 +146,31 @@ Resources:
                 Action: "*"
                 Effect: "Allow"
                 Resource: "*"
+  PipelineTrail:
+    Type: "AWS::CloudTrail::Trail"
+    Properties:
+      EventSelectors:
+        - 
+          DataResources: 
+            - 
+              Type: AWS::S3::Object
+              Values: 
+                - 
+                  Fn::Sub:
+                    - "arn:aws:s3:::${BucketName}/${ObjectKey}"
+                    - 
+                      BucketName: 
+                        Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
+                      ObjectKey: core/system/module-definition.zip
+                
+          IncludeManagementEvents: No
+          ReadWriteType: WriteOnly
+      IsLogging: Yes
+      IsMultiRegionTrail: No
+      KMSKeyId: String
+      S3BucketName: 
+        Fn::ImportValue: connected-vehicle-logging-bucket
+      S3KeyPrefix: trail/
   PipelineTrigger:
     Type: AWS::Events::Rule
     Properties: 
