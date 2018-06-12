@@ -263,7 +263,7 @@ Resources:
       Name: !Sub "${CoreStackName}-core-deliver"
       ServiceRole: !GetAtt PipelineDeliverArtifactsRole.Arn
       Source: 
-        BuildSpec: infra/buildspec-artifact-delivery.yaml
+        BuildSpec: infra/buildspec-deliver-artifacts.yaml
         Type: CODEPIPELINE
       Tags:
         -
