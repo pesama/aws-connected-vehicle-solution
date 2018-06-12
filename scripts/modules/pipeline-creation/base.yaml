@@ -175,7 +175,8 @@ Resources:
           Id: CodePipeline1
           Arn: 
             Fn::Sub: "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}"
-          RoleArn: !GetAtt PipelineTriggerRole.Arn
+          RoleArn: 
+            Fn::GetAtt: PipelineTriggerRole.Arn
   PipelineTriggerRole:
     Type: AWS::IAM::Role
     Properties:
