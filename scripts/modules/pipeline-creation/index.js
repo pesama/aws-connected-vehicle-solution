@@ -153,7 +153,7 @@ stages.push(currentStage)
 console.log(JSON.stringify(stages, null, 2))
 console.log('INFO: Finished sorting dependencies.')
 // TODO Start template building.
-const stageDefinitions = stages.map(item => {
+const stageDefinitions = stages.map((item, moduleIndex) => {
   const modules = item.Modules
   const stage = {
     Name: item.Name,
@@ -162,7 +162,7 @@ const stageDefinitions = stages.map(item => {
       const changesetName = `deploy${new Date().getTime()}`
       return [
         {
-          Name: 'PrepareDeployment',
+          Name: `PrepareDeployment${moduleIndex}`,
           ActionTypeId: {
             Category: 'Deploy',
             Owner: 'AWS',
@@ -187,7 +187,7 @@ const stageDefinitions = stages.map(item => {
           RunOrder: 1
         },
         {
-          Name: 'ExecuteDeployment',
+          Name: `ExecuteDeployment${moduleIndex}`,
           ActionTypeId: {
             Category: 'Deploy',
             Owner: 'AWS',
