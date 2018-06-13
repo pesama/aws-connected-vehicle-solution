@@ -40,10 +40,14 @@ Resources:
             Action: 
               - "s3:*"
             Effect: Allow
-            Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+            Resource: 
+              - !Sub "arn:aws:s3:::${ArtifactsBucket}"
+              - !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
             Principal: 
               AWS: 
                 - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+              Service: 
+                - codepipeline.amazonaws.com
   TmpBucket:
     Type: AWS::S3::Bucket
     Properties:

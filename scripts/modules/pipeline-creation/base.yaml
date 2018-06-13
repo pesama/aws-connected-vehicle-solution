@@ -88,7 +88,7 @@ Resources:
                 Sid: "ManageSource"
                 Action:
                   - "s3:GetObject"
-                  - "s3:GetObjectVersioning"
+                  - "s3:GetObjectVersion"
                   - "s3:GetBucketVersioning"
                 Effect: "Allow"
                 Resource: 
