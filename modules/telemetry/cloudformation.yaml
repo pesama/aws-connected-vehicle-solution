@@ -95,7 +95,7 @@ Resources:
         Actions:
           -
             Firehose:
-              DeliveryStreamName: !Ref TelemetryDeliveryStream
+              DeliveryStreamName: !Ref Stream
               RoleArn: !GetAtt TelemetryIotActionsRole.Arn
               Separator: "\n"
   TelemetryIotActionsRole:
