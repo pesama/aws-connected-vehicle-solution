@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  DriverSafetyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      FunctionName: !Sub "${AWS::StackName}-DriverSafety"
+      Role: !GetAtt DriverSafetyRole.Arn
+      MemorySize: 1024
+      Environment:
+        # Variables: TODO
+        #   VEHICLE_TRIP_TBL: !Ref VehicleTripTable
+        #   NOTIFICATION_SERVICE: !Ref NotificationServiceFunction
+      Events: TODO
+        IoTRule:
+          Type: IoTRule
+          Properties:
+            Sql: SELECT * FROM 'connectedcar/trip/#' WHERE ignition_status = 'off'
+  DriverSafetyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "DriverSafetyPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - 
+                Sid: GetData
+                Action: 
+                  - "dynamodb:BatchGetItem"
+                  - "dynamodb:BatchWriteItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Resource: "*"
+                # Resource: TODO
+                #             !Join ["", ["arn:aws:dynamodb:", Ref: "AWS::Region", ":", Ref: "AWS::AccountId", ":table/", Ref: VehicleTripTable]]
+                Effect: Allow
+              - 
+                Sid: SendNotifications
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+                # TODO NotificationFunction
+                Effect: Allow    

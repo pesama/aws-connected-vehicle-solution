@@ -41,6 +41,8 @@ Modules:
       - auth
       - fleet
       - telemetry
+      - anomalies
+      - notifications
     Location: 
       Type: local
       Source: driver-safety
