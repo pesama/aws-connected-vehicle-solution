@@ -92,8 +92,8 @@ Resources:
                   - "s3:GetBucketVersioning"
                 Effect: "Allow"
                 Resource: 
-                  - !GetAtt ArtifactsBucket.Arn
-                  - !Sub "${ArtifactsBucket.Arn}/*"
+                  - Fn::GetAtt: ArtifactsBucket.Arn
+                  - Fn::Sub: "${ArtifactsBucket.Arn}/*"
         - 
           PolicyName: "DeployStage"
           PolicyDocument: 
