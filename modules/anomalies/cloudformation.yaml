@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  AnomaliesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: AWS Connected Vehicle Solution anomaly detection microservice
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      FunctionName: !Sub "${AWS::StackName}-Anomalies"
+      Role: !GetAtt AnomaliesRole.Arn
+      MemorySize: 1024
+      Environment:
+        Variables:
+          VEHICLE_ANOMALY_TBL: !Ref AnomaliesTable
+          NOTIFICATION_SERVICE: !ImportValue connected-vehicle-notifications-function-name
+      Events:
+        Stream:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt AnomalyStream.Arn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 1
+  AnomaliesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "AnomaliesPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              -
+                Sid: "DataManagement"
+                Effect: "Allow"
+                Action:
+                  - "dynamodb:BatchGetItem"
+                  - "dynamodb:BatchWriteItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Resource:
+                  - !GetAtt AnomaliesTable.Arn
+                  - !Sub "${AnomaliesTable.Arn}/index/vin-trip_id-index"
+              -
+                Sid: "StreamManagement"
+                Effect: "Allow"
+                Action:
+                  - "kinesis:DescribeStream"
+                  - "kinesis:GetRecords"
+                  - "kinesis:GetShardIterator"
+                  - "kinesis:ListStreams"
+                Resource:
+                  - !GetAtt AnomalyStream.Arn
+              -
+                Sid: "NotificationManagement"
+                Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource:
+                  - !ImportValue connected-vehicle-notifications-function-arn
+  AnomaliesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: vin
+          AttributeType: "S"
+        -
+          AttributeName: anomaly_id
+          AttributeType: "S"
+        -
+          AttributeName: trip_id
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: vin
+          KeyType: HASH
+        -
+          AttributeName: anomaly_id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        -
+          IndexName: vin-trip_id-index
+          KeySchema:
+            - AttributeName: vin
+              KeyType: HASH
+            - AttributeName: trip_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 30
+            WriteCapacityUnits: 30
+      ProvisionedThroughput:
+        ReadCapacityUnits: 30
+        WriteCapacityUnits: 30
+  AnomalyStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: connected-vehicle-anomalies
+      ShardCount: 2
+  

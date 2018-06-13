@@ -23,6 +23,7 @@ Modules:
     Name: anomalies
     Consumes:
       - fleet
+      - notifications
     Location: 
       Type: local
       Source: anomalies

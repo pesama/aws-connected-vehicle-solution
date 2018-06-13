@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  NotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      FunctionName: !Sub "${AWS::StackName}-Notifications"
+      Role: !GetAtt NotificationsRole.Arn
+      MemorySize: 1024
+      Environment:
+        Variables:
+          VEHICLE_OWNER_TBL: !ImportValue connected-vehicle-fleet-owner-table-name
+          USER_POOL_ID: !ImportValue connected-vehicle-auth-user-pool-id  
+  NotificationsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "NotificationsPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - 
+                Sid: "DataManagement"
+                Action:
+                  - "dynamodb:BatchGetItem"
+                  - "dynamodb:BatchWriteItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Effect: Allow
+                Resource: 
+                  - !ImportValue connected-vehicle-fleet-owner-table-arn
+                  - Fn::Sub:
+                    - "${TableArn}//index/vin-index"
+                    - 
+                      TableArn: !ImportValue connected-vehicle-fleet-owner-table-arn
+              - 
+                Sid: "UserManagement"
+                Action: 
+                  - "cognito-idp:adminGetUser"
+                Effect: Allow
+                Resource: 
+                  - !ImportValue connected-vehicle-auth-user-pool-arn
+              -
+                Sid: "PushNotificationManagement"
+                Effect: "Allow"
+                Action:
+                  - "sns:Publish"
+                Resource:
+                  - "*"
+              -
+                Sid: "IoTEndpointManagement"
+                Effect: "Allow"
+                Action:
+                  - "iot:DescribeEndpoint"
+                Resource:
+                  - "*"
+              -
+                Sid: "IoTDataManagement"
+                Effect: "Allow"
+                Action:
+                  - "iot:publish"
+                Resource:
+                  - !Sub "arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topic/connectedcar/alert/*"
+Outputs:
+  NotificationFunctionName:
+    Description: Name of the function used for notifications
+    Value: !Ref NotificationsFunction
+    Export:
+      Name: connected-vehicle-notifications-function-name
+  NotificationFunctionArn:
+    Description: Arn of the function used for notifications
+    Value: !GetAtt NotificationsFunction.Arn
+    Export:
+      Name: connected-vehicle-notifications-function-arn

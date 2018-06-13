@@ -118,9 +118,13 @@ Outputs:
   VehicleTripTableName:
     Description: Name of the VehicleTrip table
     Value: !Ref VehicleTripTable
+    Export:
+      Name: connected-vehicle-fleet-trip-table-name
   VehicleTripTableArn:
     Description: Arn of the VehicleTrip table
     Value: !GetAtt VehicleTripTable.Arn
+    Export:
+      Name: connected-vehicle-fleet-trip-table-arn
   HealthReportTableName:
     Description: Name of the HealthReport table
     Value: !Ref HealthReportTable
@@ -136,6 +140,10 @@ Outputs:
   VehicleOwnerTableName:
     Description: Name of the VehicleOwner table
     Value: !Ref VehicleOwnerTable
+    Export:
+      Name: connected-vehicle-fleet-owner-table-name
   VehicleOwnerTableArn:
     Description: Arn of the VehicleOwner table
     Value: !GetAtt VehicleOwnerTable.Arn
+    Export:
+      Name: connected-vehicle-fleet-owner-table-arn

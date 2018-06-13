@@ -194,9 +194,13 @@ Outputs:
   UserPoolId:
     Description: ID of the User Pool
     Value: !Ref UserPool
+    Export: 
+      Name: connected-vehicle-auth-user-pool-id
   UserPoolArn:
     Description: ARN of the UserPool
     Value: !GetAtt UserPool.Arn
+    Export: 
+      Name: connected-vehicle-auth-user-pool-arn
   UserPoolClientId:
     Description: ID of the client used within the User Pool
     Value: !Ref UserPoolClient
