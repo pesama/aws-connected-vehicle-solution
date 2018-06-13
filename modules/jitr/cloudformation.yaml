@@ -10,9 +10,6 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-Jitr"
       Role: !GetAtt JitrRole.Arn
       MemorySize: 1024
-      Environment:
-        Variables:
-          SOME_VAR: FunctionEnvironmentVariables
       Events:
         IoTRule:
           Type: IoTRule
