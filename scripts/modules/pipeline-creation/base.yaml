@@ -235,7 +235,7 @@ Resources:
               - 
                 Sid: "StartPipeline"
                 Action: 
-                  - "codepipeline:StartExecution"
+                  - "codepipeline:StartPipelineExecution"
                 Effect: Allow
                 Resource: 
                   - Fn::Sub: "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${Pipeline}"
