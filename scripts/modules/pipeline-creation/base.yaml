@@ -85,15 +85,15 @@ Resources:
             Version: "2012-10-17"
             Statement: 
               - 
-                Sid: "ReadRepository"
+                Sid: "ManageSource"
                 Action:
-                  - "codecommit:GetBranch"
-                  - "codecommit:GetCommit"
-                  - "codecommit:UploadArchive"
-                  - "codecommit:GetUploadArchiveStatus"
-                  - "codecommit:CancelUploadArchive"
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersioning"
+                  - "s3:GetBucketVersioning"
                 Effect: "Allow"
-                Resource: "*"
+                Resource: 
+                  - !GetAtt ArtifactsBucket.Arn
+                  - !Sub "${ArtifactsBucket.Arn}/*"
         - 
           PolicyName: "DeployStage"
           PolicyDocument: 
