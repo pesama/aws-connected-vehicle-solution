@@ -13,6 +13,7 @@ Resources:
       PolicyDocument:
         Statement: 
           - 
+            Sid: "CWLAccess"
             Action: 
               - "s3:GetBucketAcl"
               - "s3:PutObject"
@@ -23,6 +24,28 @@ Resources:
             Principal: 
               Service:
                 - !Sub "logs.${AWS::Region}.amazonaws.com"
+          - 
+            Sid: "CloudTrailACLCheck"
+            Action: 
+              - "s3:GetBucketAcl"
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Resource:
+              - !GetAtt LoggingBucket.Arn
+          - 
+            Sid: "CloudTrailWrite"
+            Action: 
+              - s3:PutObject
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Resource: 
+              - !Sub ${LoggingBucket.Arn}/trail/*
+            Condition:
+              StringEquals: 
+                s3:x-amz-acl: bucket-owner-full-control
+
 Outputs:
   LoggingBucketName:
     Description: Name of the bucket used for storing logs

@@ -162,7 +162,6 @@ Resources:
                       BucketName: 
                         Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
                       ObjectKey: core/system/module-definition.zip
-                
           IncludeManagementEvents: false
           ReadWriteType: WriteOnly
       IsLogging: true
