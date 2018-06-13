@@ -92,8 +92,18 @@ Resources:
                   - "s3:GetBucketVersioning"
                 Effect: "Allow"
                 Resource: 
-                  - Fn::GetAtt: ArtifactsBucket.Arn
-                  - Fn::Sub: "${ArtifactsBucket.Arn}/*"
+                  - 
+                    Fn::Sub: 
+                      - "arn:aws:s3:::${ArtifactsBucket}"
+                      - 
+                        ArtifactsBucket: 
+                          Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
+                  - 
+                    Fn::Sub: 
+                      - "arn:aws:s3:::${ArtifactsBucket}/*"
+                      - 
+                        ArtifactsBucket: 
+                          Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
         - 
           PolicyName: "DeployStage"
           PolicyDocument: 
