@@ -192,7 +192,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref PipelineDeliverArtifacts
               InputArtifacts:
-                - Name: SourceCode
+                - Name: BuiltTemplateArtifact
               OutputArtifacts:
                 - Name: BuiltModuleDefinition
               RunOrder: 3
