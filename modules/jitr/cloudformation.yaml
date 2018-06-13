@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  JitrFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      FunctionName: !Sub "${AWS::StackName}-Jitr"
+      Role: !GetAtt JitrRole.Arn
+      MemorySize: 1024
+      Environment:
+        Variables:
+          SOME_VAR: FunctionEnvironmentVariables
+      Events:
+        IoTRule:
+          Type: IoTRule
+          Properties:
+            Sql: SELECT * FROM '$aws/events/certificates/registered/certid'
+  JitrRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "JitrPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - 
+                Sid: "RegistrationManagement"
+                Action:
+                  - "iot:UpdateCertificate"
+                  - "iot:CreatePolicy"
+                  - "iot:AttachPrincipalPolicy"
+                Effect: Allow
+                Resource: "*"
