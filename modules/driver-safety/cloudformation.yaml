@@ -13,9 +13,8 @@ Resources:
       Environment:
         Variables:
           VEHICLE_TRIP_TBL: !ImportValue connected-vehicle-fleet-trip-table-name
-        # TODO
-        #   NOTIFICATION_SERVICE: !Ref NotificationServiceFunction
-      Events: TODO
+          NOTIFICATION_SERVICE: !ImportValue connected-vehicle-notifications-function-name
+      Events: 
         IoTRule:
           Type: IoTRule
           Properties:
