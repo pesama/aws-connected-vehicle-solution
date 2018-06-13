@@ -45,43 +45,6 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 2
         WriteCapacityUnits: 2
-  VehicleAnomalyTable:
-    Type: AWS::DynamoDB::Table
-    DeletionPolicy: Delete
-    Properties:
-      AttributeDefinitions:
-        -
-          AttributeName: vin
-          AttributeType: "S"
-        -
-          AttributeName: anomaly_id
-          AttributeType: "S"
-        -
-          AttributeName: trip_id
-          AttributeType: "S"
-      KeySchema:
-        -
-          AttributeName: vin
-          KeyType: HASH
-        -
-          AttributeName: anomaly_id
-          KeyType: RANGE
-      GlobalSecondaryIndexes:
-        -
-          IndexName: vin-trip_id-index
-          KeySchema:
-            - AttributeName: vin
-              KeyType: HASH
-            - AttributeName: trip_id
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: 30
-            WriteCapacityUnits: 30
-      ProvisionedThroughput:
-        ReadCapacityUnits: 30
-        WriteCapacityUnits: 30
   VehicleOwnerTable:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: Delete

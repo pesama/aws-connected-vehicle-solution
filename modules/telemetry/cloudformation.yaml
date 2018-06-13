@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   This stack creates the AWS resources needed for storing and managing telemetry information within the Connected Vehicle solution.
   Version: 2.0.1 # TODO Include dynamic versioning?
-Parameters:
-  RolePaths:
-    Type: String
-    Description: Path for organizing the roles
 Resources:
   TelemetryDataBucket:
     Type: AWS::S3::Bucket
@@ -126,14 +122,14 @@ Resources:
                   Action:
                     - "firehose:PutRecord"
                   Resource:
-                    - "*" # FIXME Work around this when solving module dependencies
+                    - !GetAtt Stream.Arn
                 -
                   Effect: "Allow"
                   Action:
                     - "dynamodb:PutItem"
                   Resource:
-                    - "*" # FIXME Work around this when solving module dependencies
-        Path: !Ref RolePaths
+                    - !ImportValue connected-vehicle-fleet-trip-table-arn
+        Path: !ImportValue connected-vehicle-roles-path
 Outputs:
   TelemetryDataBucketName:
     Description: Name of the bucket that holds the telemetry data
