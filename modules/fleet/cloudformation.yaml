@@ -94,12 +94,6 @@ Outputs:
   HealthReportTableArn:
     Description: Arn of the HealthReport table
     Value: !GetAtt HealthReportTable.Arn
-  VehicleAnomalyTableName:
-    Description: Name of the VehicleAnomaly table
-    Value: !Ref VehicleAnomalyTable
-  VehicleAnomalyTableArn:
-    Description: Arn of the VehicleAnomaly table
-    Value: !GetAtt VehicleAnomalyTable.Arn
   VehicleOwnerTableName:
     Description: Name of the VehicleOwner table
     Value: !Ref VehicleOwnerTable
