@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  DtcFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      FunctionName: !Sub "${AWS::StackName}-Dtc"
+      Role: !GetAtt DtcRole.Arn
+      MemorySize: 1024
+      Environment:
+        Variables:
+          VEHICLE_DTC_TBL: !Ref VehicleDtcTable
+          DTC_TBL: !Ref DtcTable
+          NOTIFICATION_SERVICE: !ImportValue connected-vehicle-notifications-function-name
+      Events:
+        TelemetryRule:
+          Type: IoTRule
+          Properties:
+            Sql: SELECT * FROM 'connectedcar/dtc/#'
+  DtcRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "DtcPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: Allow
+                Resource: "*"
+              - 
+                Sid: "DataManagement"
+                Action: 
+                  - "dynamodb:BatchGetItem"
+                  - "dynamodb:BatchWriteItem"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
+                Effect: Allow
+                Resource: 
+                  - !GetAtt DtcTable.Arn
+                  - !GetAtt VehicleDtcTable.Arn
+              - 
+                Sid: "NotificationManagement"
+                Action:
+                  - "lambda:InvokeFunction"
+                Effect: Allow
+                Resource:
+                  - !ImportValue connected-vehicle-notifications-function-arn
+  DtcTable:
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Delete"
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "dtc"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "dtc"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  VehicleDtcTable:
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Delete"
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "vin"
+          AttributeType: "S"
+        -
+          AttributeName: "dtc_id"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "vin"
+          KeyType: "HASH"
+        -
+          AttributeName: "dtc_id"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
