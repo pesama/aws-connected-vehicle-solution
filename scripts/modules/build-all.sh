@@ -10,14 +10,15 @@ if [ "none" = "$module_list_str" ]; then
 fi
 
 output_dir=${2:-none}
-if [ "none" = $output_dir ]; then
+if [ "none" = "$output_dir" ]; then
   echo "ERROR: Parameter output_dir is mandatory, and not given."
   echo "USAGE: bash ${script_dir}/modules/build-all.sh module_list output_dir"
   exit 1
 fi
 
 # TODO Implement 3rd party
-for module in $(echo "${module_list_str}" | jq -r '.[]'); do
+module_list=(${module_list_str//,/ })
+for module in ${module_list[@]}; do
   bash $script_dir/build-internal.sh $module
   prev_code=$(echo $?)
   if [ "0" != $prev_code ]; then
