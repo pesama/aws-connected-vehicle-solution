@@ -19,7 +19,7 @@ Resources:
         Stream:
           Type: Kinesis
           Properties:
-            Stream: !GetAtt AnomalyStream.Arn
+            Stream: !GetAtt AnomaliesStream.Arn
             StartingPosition: TRIM_HORIZON
             BatchSize: 1
   AnomaliesRole:
@@ -73,7 +73,7 @@ Resources:
                   - "kinesis:GetShardIterator"
                   - "kinesis:ListStreams"
                 Resource:
-                  - !GetAtt AnomalyStream.Arn
+                  - !GetAtt AnomaliesStream.Arn
               -
                 Sid: "NotificationManagement"
                 Effect: "Allow"
@@ -118,9 +118,108 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 30
         WriteCapacityUnits: 30
-  AnomalyStream:
+  AnomaliesStream:
     Type: AWS::Kinesis::Stream
     Properties:
       Name: connected-vehicle-anomalies
       ShardCount: 2
-  
+  AnomaliesAnalyticsApp:
+    Type: AWS::KinesisAnalytics::Application
+    Properties:
+      Inputs: 
+        - 
+          InputSchema:
+            RecordColumns:
+              -
+                Name: ts
+                SqlType: TIMESTAMP
+                Mapping: $.timestamp
+              -
+                Name: trip_id
+                SqlType: VARCHAR(64)
+                Mapping: $.trip_id
+              -
+                Name: vin
+                SqlType: VARCHAR(32)
+                Mapping: $.vin
+              -
+                Name: name
+                SqlType: VARCHAR(32)
+                Mapping: $.name
+              -
+                Name: val
+                SqlType: DOUBLE
+                Mapping: $.value
+              -
+                Name: latitude
+                SqlType: DOUBLE
+                Mapping: $.latitude
+              -
+                Name: longitude
+                SqlType: DOUBLE
+                Mapping: $.longitude
+            RecordFormat:
+              RecordFormatType: JSON
+              MappingParameters:
+                JSONMappingParameters: 
+                  RecordRowPath: $
+            RecordEncoding: UTF-8
+          NamePrefix: SOURCE_SQL_STREAM
+          KinesisFirehoseInput:
+            ResourceArn: !ImportValue connected-vehicle-telemetry-delivery-stream-arn
+            RoleArn: !GetAtt AnomaliesAnalyticsRole.Arn
+  AnomaliesAnalyticsAppOutput:
+    Type: AWS::KinesisAnalytics::ApplicationOutput
+    Properties:
+      ApplicationName: !Ref AnomaliesAnalyticsApp
+      Output:
+        DestinationSchema:
+          RecordFormatType: JSON
+        Name: ANOMALY_OUTPUT_STREAM
+        KinesisStreamsOutput:
+          ResourceArn: !GetAtt AnomaliesStream.Arn
+          RoleArn: !GetAtt AnomaliesAnalyticsRole.Arn
+  AnomaliesAnalyticsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "kinesisanalytics.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - 
+          PolicyName: "AnomaliesAnalyticsPolicy"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - 
+                Sid: "WriteLogs"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
+              -
+                Sid: "ManageIngestion"
+                Effect: "Allow"
+                Action:
+                  - "firehose:DescribeDeliveryStream"
+                  - "firehose:Get*"
+                Resource:
+                  - Fn::Sub: "arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:deliverystream/${TelemetricsDeliveryStream}"
+              -
+                Sid: "ManageDelivery"
+                Effect: "Allow"
+                Action:
+                  - "kinesis:DescribeStream"
+                  - "kinesis:PutRecord"
+                  - "kinesis:PutRecords"
+                Resource:
+                  - Fn::Sub: "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${AnomalyStream}"

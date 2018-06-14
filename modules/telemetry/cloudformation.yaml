@@ -83,8 +83,8 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/aws/kinesisfirehose/connected-vehicle-telemetry:log-stream:*"
       Path: !ImportValue connected-vehicle-roles-path
-  TelemetryRawStorageRule:
-    Type: "AWS::IoT::TopicRule"
+  RawStorageRule:
+    Type: AWS::IoT::TopicRule
     Properties:
       RuleName: "ConnectedVehicleTelematicsStorage"
       TopicRulePayload:
@@ -96,9 +96,24 @@ Resources:
           -
             Firehose:
               DeliveryStreamName: !Ref Stream
-              RoleArn: !GetAtt TelemetryIotActionsRole.Arn
+              RoleArn: !GetAtt IotActionsRole.Arn
               Separator: "\n"
-  TelemetryIotActionsRole:
+  AggregatedStorageRule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: "ConnectedVehicleTelematicsStorage"
+      TopicRulePayload:
+        RuleDisabled: No
+        Description: "Persistent storage of connected vehicle telematics data."
+        Sql: >-
+          SELECT * FROM 'connectedcar/trip/#'
+        Actions:
+          -
+            DynamoDBv2:
+              PutItem: 
+                TableName: !ImportValue connected-vehicle-fleet-trip-table-name
+              RoleArn: !GetAtt IotActionsRole.Arn
+  IotActionsRole:
     Type: AWS::IAM::Role
     Properties:
         AssumeRolePolicyDocument:
@@ -137,6 +152,13 @@ Outputs:
   TelemetryTripsDataBucketName:
     Description: Name of the bucket that holds the telemetry trip data
     Value: !Ref TelemetryTripsDataBucket
-  Stream:
+  StreamName:
     Description: Name of the Telemetry stream
     Value: !Ref Stream
+    Export:
+      Name: connected-vehicle-telemetry-delivery-stream-name
+  StreamArn:
+    Description: Arn of the Telemetry stream
+    Value: !GetAtt Stream.Arn
+    Export:
+      Name: connected-vehicle-telemetry-delivery-stream-arn
