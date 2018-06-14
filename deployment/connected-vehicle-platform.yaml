@@ -1357,61 +1357,7 @@ Resources:
             SourceArn: !Sub "arn:aws:iot:${AWS::Region}:${AWS::AccountId}:rule/${TelemetricsDriverScoreRule}"
             SourceAccount: !Sub "${AWS::AccountId}"
 
-    TelemetricsAggregationRule:
-        Type: "Custom::LoadLambda"
-        Properties:
-            ServiceToken:
-                Fn::GetAtt:
-                    - "ConnectedVehicleHelper"
-                    - "Arn"
-            Region:
-                - Ref: "AWS::Region"
-            name: "ConnectedVehicleTrip"
-            tableName: !Ref VehicleTripTable
-            roleArn: !GetAtt TelemetricsIotActionsRole.Arn
-            sql: "SELECT * FROM 'connectedcar/trip/#'"
-            description: "Processing connected vehicle aggregated trip telematics."
-            customAction: "dynamoDBv2IotRule"
-
-    TelemetricsIotActionsRole:
-        Type: "AWS::IAM::Role"
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    -
-                        Effect: "Allow"
-                        Principal:
-                            Service:
-                                - "iot.amazonaws.com"
-                        Action:
-                                - "sts:AssumeRole"
-            Path: "/"
-
-    TelemetricsIotActionsPolicy:
-        Type: "AWS::IAM::ManagedPolicy"
-        Properties:
-            Description: "Policy for the iot actions in the connected vehicle telemetrics platform."
-            PolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    -
-                        Effect: "Allow"
-                        Action:
-                            - "firehose:PutRecord"
-                        Resource:
-                            - Fn::Sub: "arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:deliverystream/${TelemetricsDeliveryStream}"
-                    -
-                        Effect: "Allow"
-                        Action:
-                            - "dynamodb:PutItem"
-                        Resource:
-                            - Fn::Sub: "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehicleTripTable}"
-
-            Roles:
-                -
-                    Ref: "TelemetricsIotActionsRole"
-
+    
     TelemetricDataBucket:
         Type: AWS::S3::Bucket
         DeletionPolicy: Retain
@@ -1454,7 +1400,7 @@ Resources:
                   VEHICLE_TRIP_TBL: !Ref VehicleTripTable
                   NOTIFICATION_SERVICE: !Ref NotificationServiceFunction
 
-    VehicleServiceFunction:
+    VehicleServiceFunction: 
       Type: AWS::Lambda::Function
       Properties:
           Description: "AWS Connected Vehicle Solution vehicle interface microservice for API"
@@ -1475,21 +1421,6 @@ Resources:
                   VEHICLE_ANOMALY_TBL: !Ref VehicleAnomalyTable
 
     
-    
-    TelemetricsAnomalyAnalyticsApplication:
-        Type: "Custom::LoadLambda"
-        Properties:
-            ServiceToken:
-                Fn::GetAtt:
-                    - "ConnectedVehicleHelper"
-                    - "Arn"
-            Region:
-                - Ref: "AWS::Region"
-            name: "ConnectedVehicleAnomalyDetectionApp"
-            anomalyStream: !GetAtt AnomalyStream.Arn
-            deliveryStream: !Sub "arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:deliverystream/${TelemetricsDeliveryStream}"
-            roleArn: !GetAtt TelemetricsAnomalyAnalyticsRole.Arn
-            customAction: "kinesisApplication"
 
     TelemetricsDeliveryStreamRole:
         Type: "AWS::IAM::Role"
@@ -1543,42 +1474,6 @@ Resources:
             Roles:
                 -
                     Ref: "TelemetricsDeliveryStreamRole"
-
-    TelemetricsAnomalyAnalyticsRole:
-        Type: "AWS::IAM::Role"
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    -
-                        Effect: "Allow"
-                        Principal:
-                            Service:
-                                - "kinesisanalytics.amazonaws.com"
-                        Action:
-                                - "sts:AssumeRole"
-            Path: "/"
-            Policies:
-                -
-                    PolicyName: "TelemetricsAnomalyAnalyticsPolicy"
-                    PolicyDocument:
-                        Version: "2012-10-17"
-                        Statement:
-                            -
-                                Effect: "Allow"
-                                Action:
-                                    - "firehose:DescribeDeliveryStream"
-                                    - "firehose:Get*"
-                                Resource:
-                                    - Fn::Sub: "arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:deliverystream/${TelemetricsDeliveryStream}"
-                            -
-                                Effect: "Allow"
-                                Action:
-                                    - "kinesis:DescribeStream"
-                                    - "kinesis:PutRecord"
-                                    - "kinesis:PutRecords"
-                                Resource:
-                                    - Fn::Sub: "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${AnomalyStream}"
     
    
     VehicleServiceRole:

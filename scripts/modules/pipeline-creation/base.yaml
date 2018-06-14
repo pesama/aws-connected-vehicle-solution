@@ -17,25 +17,6 @@ Resources:
       Name: ConnectedVehicleModules
       RoleArn:
         Fn::GetAtt: PipelineRole.Arn
-      Stages:
-        - 
-          Name: Source
-          Actions:
-            -
-              Name: Source
-              ActionTypeId:
-                Category: Source
-                Owner: AWS
-                Provider: S3
-                Version: '1'
-              Configuration:
-                PollForSourceChanges: false
-                S3Bucket: 
-                  Fn::ImportValue: connected-vehicle-cicd-artifacts-bucket
-                S3ObjectKey: core/system/module-definition.zip
-              OutputArtifacts:
-                - Name: SourceCode
-              RunOrder: 1
   PipelineRole:
     Type: AWS::IAM::Role
     Properties:

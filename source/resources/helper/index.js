@@ -35,27 +35,7 @@ exports.handler = (event, context, callback) => {
     let responseData = {};
 
     if (event.RequestType === 'Delete') {
-        if (event.ResourceProperties.customAction === 'dynamoDBv2IotRule') {
-            responseStatus = 'SUCCESS';
-
-            let _iotHelper = new IotHelper();
-
-            let _params = {
-                name: event.ResourceProperties.name,
-            };
-
-            _iotHelper.deleteTopicRule(_params, function(err, data) {
-                if (err) {
-                    responseData = {
-                        Error: ['Deleting IoT Topic Rule', event.ResourceProperties.name, 'failed'].join(' ')
-                    };
-                    console.log([responseData.Error, ':\n', err].join(''));
-                }
-
-                sendResponse(event, callback, context.logStreamName, responseStatus, responseData);
-            });
-
-        } else if (event.ResourceProperties.customAction === 'kinesisApplication') {
+        if (event.ResourceProperties.customAction === 'kinesisApplication') {
             let _kinesisHelper = new KinesisHelper();
             let _params = {
                 appName: event.ResourceProperties.name,
@@ -82,37 +62,7 @@ exports.handler = (event, context, callback) => {
     }
 
     if (event.RequestType === 'Create') {
-        if (event.ResourceProperties.customAction === 'dynamoDBv2IotRule') {
-            let _iotHelper = new IotHelper();
-            let _params = {
-                name: event.ResourceProperties.name,
-                actions: [{
-                    dynamoDBv2: {
-                        putItem: {
-                            tableName: event.ResourceProperties.tableName
-                        },
-                        roleArn: event.ResourceProperties.roleArn
-                    }
-                }],
-                sql: event.ResourceProperties.sql,
-                description: event.ResourceProperties.description
-            };
-
-            _iotHelper.createTopicRule(_params, function(err, data) {
-                if (err) {
-                    responseData = {
-                        Error: ['Creating IoT Topic Rule', event.ResourceProperties.name, 'failed'].join(' ')
-                    };
-                    console.log([responseData.Error, ':\n', err].join(''));
-                } else {
-                    responseStatus = 'SUCCESS';
-                    responseData = {};
-                }
-
-                sendResponse(event, callback, context.logStreamName, responseStatus, responseData);
-            });
-
-        } else if (event.ResourceProperties.customAction === 'kinesisApplication') {
+        if (event.ResourceProperties.customAction === 'kinesisApplication') {
             let _kinesisHelper = new KinesisHelper();
             let _params = {
                 appName: event.ResourceProperties.name,

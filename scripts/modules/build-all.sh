@@ -19,7 +19,7 @@ fi
 # TODO Implement 3rd party
 module_list=(${module_list_str//,/ })
 for module in ${module_list[@]}; do
-  bash $script_dir/build-internal.sh $module
+  bash $script_dir/build-internal.sh $module $output_dir
   prev_code=$(echo $?)
   if [ "0" != $prev_code ]; then
     echo "ERROR: Failed to build module $module."
@@ -27,7 +27,6 @@ for module in ${module_list[@]}; do
   fi
 
   echo "INFO: Successfully packaged module $module"
-  mv $project_dir/modules/$module/cloudformation.pkg.yaml $output_dir/$module.yaml
 done
 
 echo "INFO: Successfully packaged modules"

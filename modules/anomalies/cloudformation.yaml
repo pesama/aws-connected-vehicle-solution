@@ -126,6 +126,19 @@ Resources:
   AnomaliesAnalyticsApp:
     Type: AWS::KinesisAnalytics::Application
     Properties:
+      ApplicationCode:
+        Fn::Join:
+          - '\n'
+          - 
+            - CREATE OR REPLACE STREAM "TEMP_STREAM" ("ts" TIMESTAMP,"oil_temp" DOUBLE,"trip_id" VARCHAR(64),"vin" VARCHAR(32),"ANOMALY_SCORE" DOUBLE);
+            - CREATE OR REPLACE STREAM "ANOMALY_STREAM" ("ts" TIMESTAMP,"oil_temp" DOUBLE,"trip_id" VARCHAR(64),"vin" VARCHAR(32),"ANOMALY_SCORE" DOUBLE);
+            - CREATE OR REPLACE STREAM "ANOMALY_OUTPUT_STREAM" ("ts" TIMESTAMP,"value" DOUBLE,"trip_id" VARCHAR(64),"vin" VARCHAR(32),"ANOMALY_SCORE" DOUBLE, "telemetric" VARCHAR(32),"low_limit" INT);
+            - -- Option 1 - Compute an anomaly score for each oil temperature record in the input stream using unsupervised machine learning algorithm, Random Cut Forest
+            - --CREATE OR REPLACE PUMP "STREAM_PUMP" AS INSERT INTO "TEMP_STREAM" SELECT STREAM "ts","val", "trip_id", "vin", ANOMALY_SCORE FROM TABLE(RANDOM_CUT_FOREST(CURSOR(SELECT STREAM * FROM "SOURCE_SQL_STREAM_001" WHERE "name" = \'oil_temp\' AND "val" > 240),10,10,10,1));
+            - -- Option 2 - Compute an anomaly score for each oil temperaure record in the input stream, where the anomaly is a simple diff between the observed oil temperature and a predefined average
+            - CREATE OR REPLACE PUMP "STREAM_PUMP" AS INSERT INTO "TEMP_STREAM" SELECT STREAM "ts","val", "trip_id", "vin", ("val"-250) as ANOMALY_SCORE FROM "SOURCE_SQL_STREAM_001" WHERE "name" = \'oil_temp\';
+            - CREATE OR REPLACE PUMP "ANOMALY_STREAM_PUMP" AS INSERT INTO "ANOMALY_STREAM" SELECT STREAM * FROM "TEMP_STREAM";
+            - CREATE OR REPLACE PUMP "OUTPUT_PUMP" AS INSERT INTO "ANOMALY_OUTPUT_STREAM" SELECT STREAM *,\'oil_temp\' as telemetric, 250 as low_limit FROM "TEMP_STREAM" WHERE ANOMALY_SCORE > 30;
       Inputs: 
         - 
           InputSchema:

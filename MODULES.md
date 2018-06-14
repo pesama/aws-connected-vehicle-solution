@@ -65,7 +65,7 @@ TODO Auto package?
 
 ### Data population procedures
 
-Once modules are deployed, they may need to have some data population tasks performed for them to work correctly - e.g. inserting master data. This task is handled by AWS CodeBuild and the process is defined in a `buildspec.data.yaml` file, at the root's folder.
+Once modules are deployed, they may need to have some data population tasks performed for them to work correctly - e.g. inserting master data. 
 
 TODO Permissions?
 TODO Why not Lambda?

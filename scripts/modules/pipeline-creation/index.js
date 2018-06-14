@@ -152,8 +152,47 @@ stages.push(currentStage)
 
 console.log(JSON.stringify(stages, null, 2))
 console.log('INFO: Finished sorting dependencies.')
-// TODO Start template building.
-const stageDefinitions = stages.map((item, moduleIndex) => {
+
+const sourceStage = {
+  Name: 'Source',
+  Actions: installedModules.map(moduleName => {
+    const module = directory.Modules.filter(item => item.Name === moduleName)[0]
+    const location = module.Location.Type
+    const source = module.Location.Source
+    let action = null
+    switch (location) {
+      case 'local':
+        action = {
+          Name: `${moduleName}Source`,
+          ActionTypeId: {
+            Category: 'Source',
+            Owner: 'AWS',
+            Provider: 'S3',
+            Version: '1'
+          },
+          Configuration: {
+            PollForSourceChanges: false,
+            S3Bucket: {
+              'Fn::ImportValue': 'connected-vehicle-cicd-artifacts-bucket'
+            },
+            S3ObjectKey: `core/system/${moduleName}.zip`
+          },
+          OutputArtifacts: [{
+            Name: `${moduleName}SourceCode`
+          }],
+          RunOrder: 1
+        }
+        break;
+      case 'github':
+        // TODO
+        break;
+    }
+
+    return action
+  })
+}
+
+const deploymentStages = stages.map((item, moduleIndex) => {
   const modules = item.Modules
   const stage = {
     Name: item.Name,
@@ -181,7 +220,7 @@ const stageDefinitions = stages.map((item, moduleIndex) => {
           },
           InputArtifacts: [
             {
-              Name: 'SourceCode'
+              Name: `${module}SourceCode`
             }
           ],
           RunOrder: 1
@@ -216,6 +255,14 @@ const stageDefinitions = stages.map((item, moduleIndex) => {
 console.log('INFO: Stage definition created successfully')
 
 const stageObject = baseTemplate.Resources.Pipeline.Properties.Stages
+if (!stageObject) {
+  stageObject = baseTemplate.Resources.Pipeline.Properties.Stages = []
+}
+
+console.log('INFO: Including source stage')
+stageObject.push(sourceStage)
+
+console.log('INFO: Including deployment stages')
 stageObject.push.apply(stageObject, stageDefinitions)
 
 console.log('INFO: Modules template ready. Saving file...')
