@@ -28,6 +28,7 @@ The Connected Vehicle solution’s source code is stored on GitHub, and the sync
 The procedure for installing the solution using this method is also straightforward, and relies on CloudFormation for the resource spin-up. Click on the appropriate button below, and follow the process.
 
 **TODO**
+
 Region | Launch
  ------ | ------
 _us_east_1_ | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
