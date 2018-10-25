@@ -8,10 +8,11 @@ The simplest way to deploy the Connected Vehicle solution is through the one tim
 The one time install uses a pre-packaged CloudFormation template that defines the resources needed for the system to work. Please click on the “Launch Stack” button corresponding to the AWS region you’d like the solution deployed to. If you don’t know or just want to test the system’s capabilities, we recommend you to use North Virginia - us-east-1.
 
 **TODO**
-Region        | Launch
- ------        | ------
- _us_east_1_   | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
- _eu_west_1_   | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
+
+Region | Launch
+ ------ | ------
+ _us_east_1_ | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
+ _eu_west_1_ | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
 
 _NOTE: The one-time setup approach is recommended for rapidly evaluating the solution. The system deployed will include out-of-the-box all the system’s core functionalities and most-common modules, ready for use to use._
 
@@ -27,10 +28,10 @@ The Connected Vehicle solution’s source code is stored on GitHub, and the sync
 The procedure for installing the solution using this method is also straightforward, and relies on CloudFormation for the resource spin-up. Click on the appropriate button below, and follow the process.
 
 **TODO**
-Region        | Launch
- ------        | ------
-_us_east_1_   | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
-_eu_west_1_   | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
+Region | Launch
+ ------ | ------
+_us_east_1_ | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
+_eu_west_1_ | ![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)
 
 During the configuration of the stack, you’d need to provide some information to customize your copy of the Connected Vehicle solution:
 * **TODO**.
